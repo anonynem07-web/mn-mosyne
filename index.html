@@ -1,0 +1,1464 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Fiches — répétition espacée</title>
+<meta name="theme-color" content="#3E3226">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,500&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --walnut:#3E3226;
+  --walnut-deep:#2C231A;
+  --walnut-light:#57493A;
+  --card:#FBF6EA;
+  --card-shade:#F0E9D6;
+  --line-blue:#9FB6D4;
+  --line-red:#C24B3F;
+  --ink:#2A2420;
+  --ink-soft:#6B5D4E;
+  --brass:#E8927C;
+  --brass-deep:#C6715C;
+  --sage:#6E8F6B;
+  --rose:#C24B3F;
+  --font-display:'Newsreader',serif;
+  --font-body:'Inter',sans-serif;
+  --font-mono:'IBM Plex Mono',monospace;
+  --safe-top:env(safe-area-inset-top,0px);
+  --safe-bottom:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--walnut);
+  background-image:
+    linear-gradient(var(--walnut-light) 1px, transparent 1px),
+    linear-gradient(90deg, var(--walnut-light) 1px, transparent 1px);
+  background-size:64px 64px;
+  background-position:-1px -1px;
+  color:var(--card);
+  font-family:var(--font-body);
+  min-height:100vh;
+  min-height:100dvh;
+  -webkit-tap-highlight-color:transparent;
+  overscroll-behavior-y:none;
+}
+::selection{background:var(--brass);color:var(--walnut-deep);}
+:focus-visible{outline:2px solid var(--brass);outline-offset:2px;}
+button{font-family:inherit;cursor:pointer;}
+em{font-style:italic;}
+strong{font-weight:700;}
+u{text-decoration:underline;text-decoration-color:var(--brass-deep);text-underline-offset:2px;}
+@media (prefers-reduced-motion: reduce){
+  *{animation-duration:.01ms !important;transition-duration:.01ms !important;}
+}
+
+.app{max-width:480px;margin:0 auto;min-height:100dvh;display:flex;flex-direction:column;padding-top:var(--safe-top);}
+.hidden{display:none !important;}
+
+/* ---------- topbar ---------- */
+.topbar{display:flex;align-items:center;gap:8px;padding:18px 18px 10px 18px;}
+.topbar .back{background:none;border:none;color:var(--card);font-size:22px;padding:4px 8px 4px 0;line-height:1;opacity:.85;flex:none;}
+.topbar .back:hover{opacity:1;}
+.topbar h1{font-family:var(--font-display);font-weight:600;font-size:22px;margin:0;flex:1;letter-spacing:.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.topbar .stamp-btn{background:none;border:1px solid rgba(251,246,234,.35);color:var(--card);border-radius:999px;padding:6px 12px;font-family:var(--font-mono);font-size:11.5px;letter-spacing:.03em;flex:none;}
+.topbar .stamp-btn:hover{border-color:var(--brass);color:var(--brass);}
+.topbar .icon-btn{background:none;border:none;color:var(--card);font-size:18px;padding:4px 6px;flex:none;opacity:.85;}
+.topbar .icon-btn:hover{opacity:1;color:var(--brass);}
+
+main{flex:1;padding:6px 18px calc(24px + var(--safe-bottom)) 18px;overflow-y:auto;}
+
+/* ---------- home ---------- */
+.hero{padding:8px 4px 22px 4px;}
+.hero .eyebrow{font-family:var(--font-mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--brass);margin:0 0 6px 0;}
+.hero h2{font-family:var(--font-display);font-size:30px;font-weight:600;margin:0 0 14px 0;line-height:1.15;}
+.review-cta{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;background:var(--brass);color:var(--walnut-deep);border:none;border-radius:14px;padding:16px 18px;font-family:var(--font-display);font-size:19px;font-weight:600;box-shadow:0 6px 0 var(--brass-deep);}
+.review-cta:active{transform:translateY(3px);box-shadow:0 3px 0 var(--brass-deep);}
+.review-cta .count{font-family:var(--font-mono);font-size:14px;background:var(--walnut-deep);color:var(--brass);padding:3px 9px;border-radius:999px;}
+.review-cta.empty{background:transparent;border:1px dashed rgba(251,246,234,.3);color:var(--card);box-shadow:none;font-size:15px;font-family:var(--font-body);justify-content:center;}
+
+.section-label{font-family:var(--font-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:rgba(251,246,234,.55);margin:24px 4px 10px 4px;display:flex;align-items:center;justify-content:space-between;}
+
+.folder-group{margin-bottom:6px;}
+.folder-header{display:flex;align-items:center;gap:8px;padding:9px 10px;margin-top:10px;border-radius:8px;background:rgba(251,246,234,.06);}
+.folder-header .fname{flex:1;font-family:var(--font-mono);font-size:12.5px;letter-spacing:.03em;color:var(--card);min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.folder-header .ficon{opacity:.7;}
+.folder-header .fbtn{background:none;border:none;color:rgba(251,246,234,.45);font-size:12px;padding:2px 5px;flex:none;}
+.folder-header .fbtn:hover{color:var(--brass);}
+.folder-decks{padding-left:8px;border-left:2px solid rgba(251,246,234,.12);margin:6px 0 6px 10px;}
+
+.deck-row{
+  position:relative;
+  display:flex;align-items:center;gap:12px;
+  background:var(--card);color:var(--ink);
+  border-radius:10px;padding:14px 14px 14px 18px;margin-bottom:10px;
+  border-left:5px solid var(--line-red);
+  box-shadow:0 2px 0 rgba(0,0,0,.15);
+}
+.deck-row .info{flex:1;min-width:0;}
+.deck-row .name{font-family:var(--font-display);font-size:17px;font-weight:600;margin:0 0 2px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.deck-row .meta{font-family:var(--font-mono);font-size:11.5px;color:var(--ink-soft);}
+.deck-row .due-badge{font-family:var(--font-mono);font-size:12px;font-weight:600;background:var(--brass);color:var(--walnut-deep);border-radius:999px;padding:4px 10px;flex:none;}
+.deck-row .due-badge.zero{background:var(--card-shade);color:var(--ink-soft);}
+.deck-row .chevron{color:var(--ink-soft);flex:none;font-size:18px;}
+
+.empty-state{text-align:center;padding:40px 20px;color:rgba(251,246,234,.6);}
+.empty-state p{font-size:14.5px;line-height:1.6;margin:0;}
+
+.fab{
+  position:fixed;right:calc(50% - 240px + 20px);bottom:calc(24px + var(--safe-bottom));
+  width:56px;height:56px;border-radius:50%;background:var(--brass);color:var(--walnut-deep);
+  border:none;font-size:26px;box-shadow:0 4px 12px rgba(0,0,0,.35);
+  display:flex;align-items:center;justify-content:center;
+}
+@media (max-width:520px){ .fab{right:20px;} }
+.fab:active{transform:scale(.94);}
+
+/* ---------- deck detail ---------- */
+.deck-actions{display:flex;gap:10px;margin:6px 0 12px 0;}
+.btn{
+  font-family:var(--font-body);font-weight:600;font-size:13.5px;
+  border-radius:10px;padding:11px 14px;border:1px solid rgba(251,246,234,.3);
+  background:transparent;color:var(--card);flex:1;text-align:center;
+}
+.btn:hover{border-color:var(--brass);color:var(--brass);}
+.btn.primary{background:var(--brass);color:var(--walnut-deep);border-color:var(--brass);}
+.btn.primary:hover{background:var(--brass-deep);color:var(--card);border-color:var(--brass-deep);}
+.btn.danger{border-color:rgba(194,75,63,.5);color:#E3A79E;}
+.btn.danger:hover{border-color:var(--rose);color:var(--rose);}
+.btn.full{width:100%;}
+.btn:disabled{opacity:.4;cursor:not-allowed;}
+
+.folder-select-row{display:flex;align-items:center;gap:8px;margin:0 0 18px 0;font-family:var(--font-mono);font-size:12px;color:rgba(251,246,234,.6);}
+.folder-select-row select{background:var(--card);color:var(--ink);border:none;border-radius:6px;padding:6px 8px;font-family:var(--font-body);font-size:13px;flex:1;}
+
+.card-row{
+  display:flex;gap:10px;align-items:flex-start;
+  background:var(--card);color:var(--ink);border-radius:8px;
+  padding:12px 14px;margin-bottom:8px;border-left:3px solid var(--line-blue);
+}
+.card-row .txt{flex:1;min-width:0;}
+.card-row .front{font-family:var(--font-display);font-size:15px;font-weight:500;margin:0 0 3px 0;}
+.card-row .back{font-size:13px;color:var(--ink-soft);margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.card-row .side{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex:none;}
+.card-row .edit-btn{background:none;border:none;color:var(--ink-soft);font-size:13px;font-family:var(--font-mono);padding:4px;}
+.card-row .edit-btn:hover{color:var(--brass-deep);}
+.mastery-badge{font-family:var(--font-mono);font-size:10.5px;color:var(--brass-deep);background:var(--card-shade);border-radius:999px;padding:2px 8px;white-space:nowrap;}
+.mastery-badge.new{color:var(--ink-soft);}
+
+/* ---------- study ---------- */
+.study-wrap{display:flex;flex-direction:column;align-items:center;padding-top:6px;}
+.study-progress{font-family:var(--font-mono);font-size:12.5px;color:rgba(251,246,234,.7);margin-bottom:18px;}
+.card-stage{position:relative;width:100%;max-width:340px;height:420px;margin-bottom:26px;touch-action:pan-y;}
+.stack-deco{position:absolute;inset:0;border-radius:14px;background:var(--card-shade);}
+.stack-deco.s2{transform:translateY(10px) scale(.97);opacity:.65;}
+.stack-deco.s1{transform:translateY(5px) scale(.985);opacity:.85;}
+.flip-card{
+  position:absolute;inset:0;cursor:pointer;
+  perspective:1400px;
+}
+.flip-inner{
+  position:relative;width:100%;height:100%;
+  transform-style:preserve-3d;
+  transition:transform .5s cubic-bezier(.2,.8,.2,1);
+}
+.flip-card.flipped .flip-inner{transform:rotateY(180deg);}
+.face{
+  position:absolute;inset:0;backface-visibility:hidden;
+  background:var(--card);color:var(--ink);border-radius:14px;
+  box-shadow:0 10px 24px rgba(0,0,0,.35);
+  padding:26px 22px 22px 34px;
+  display:flex;flex-direction:column;
+  overflow:hidden;
+}
+.face::before{ /* marge rouge */
+  content:'';position:absolute;left:22px;top:16px;bottom:16px;width:1.5px;background:var(--line-red);
+}
+.face .face-label{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:14px;flex:none;}
+.face .face-text{
+  font-family:var(--font-display);font-size:21px;line-height:28px;font-weight:500;
+  position:relative;z-index:1;overflow-y:auto;flex:1;
+  background-image:repeating-linear-gradient(to bottom, transparent 0, transparent 26px, var(--line-blue) 26px, var(--line-blue) 27.5px, transparent 27.5px, transparent 28px);
+  background-attachment:local;
+}
+.face .face-text .def-line{line-height:28px;margin:0;}
+.face .face-text .def-line.secondary{opacity:.6;font-size:.8em;font-weight:400;}
+.face.back{transform:rotateY(180deg);}
+.face .stamp{position:absolute;bottom:16px;right:16px;font-family:var(--font-mono);font-size:10px;color:var(--brass-deep);border:1.5px solid var(--brass-deep);border-radius:4px;padding:3px 7px;transform:rotate(-6deg);opacity:.75;letter-spacing:.04em;}
+.tap-hint{font-family:var(--font-mono);font-size:11.5px;color:rgba(251,246,234,.5);margin-bottom:18px;text-align:center;}
+
+.grade-row{display:flex;gap:8px;width:100%;max-width:340px;}
+.grade-btn{
+  flex:1;border:none;border-radius:10px;padding:12px 4px 10px 4px;
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+  font-family:var(--font-body);font-weight:700;font-size:12.5px;color:var(--walnut-deep);
+}
+.grade-btn .interval{font-family:var(--font-mono);font-weight:500;font-size:10.5px;opacity:.85;}
+.grade-btn.again{background:#E3A79E;}
+.grade-btn.hard{background:#E7C98A;}
+.grade-btn.good{background:#A9C6A4;}
+.grade-btn.easy{background:#8FB6D4;}
+.grade-btn:active{transform:scale(.96);}
+
+.session-end{text-align:center;padding:60px 20px;}
+.session-end .big{font-family:var(--font-display);font-size:26px;font-weight:600;margin:0 0 8px 0;}
+.session-end p{color:rgba(251,246,234,.7);font-size:14px;margin:0 0 24px 0;}
+
+/* ---------- stats ---------- */
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:22px;}
+.stat-tile{background:var(--card);color:var(--ink);border-radius:10px;padding:12px 14px;border-left:4px solid var(--brass);}
+.stat-tile .val{font-family:var(--font-display);font-size:23px;font-weight:600;line-height:1.1;}
+.stat-tile .lbl{font-family:var(--font-mono);font-size:10px;color:var(--ink-soft);margin-top:4px;text-transform:uppercase;letter-spacing:.03em;}
+.chart-card{background:var(--card);color:var(--ink);border-radius:10px;padding:14px 14px 8px 14px;margin-bottom:14px;}
+.chart-card h4{font-family:var(--font-mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-soft);margin:0 0 8px 0;display:flex;justify-content:space-between;}
+.stats-table{width:100%;border-collapse:collapse;background:var(--card);color:var(--ink);border-radius:10px;overflow:hidden;margin-bottom:20px;}
+.stats-table th, .stats-table td{padding:9px 10px;text-align:left;font-size:12px;}
+.stats-table th{font-family:var(--font-mono);font-size:9.5px;text-transform:uppercase;color:var(--ink-soft);background:var(--card-shade);}
+.stats-table tr+tr td{border-top:1px solid var(--card-shade);}
+
+/* ---------- modals ---------- */
+.modal-backdrop{
+  position:fixed;inset:0;background:rgba(20,16,10,.55);z-index:50;
+  display:flex;align-items:flex-end;justify-content:center;
+}
+.modal{
+  width:100%;max-width:480px;background:var(--walnut);color:var(--card);
+  border-radius:18px 18px 0 0;padding:20px 20px calc(20px + var(--safe-bottom)) 20px;
+  max-height:88vh;overflow-y:auto;
+  border-top:3px solid var(--brass);
+}
+.modal h3{font-family:var(--font-display);font-size:19px;font-weight:600;margin:0 0 14px 0;}
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;}
+.field label{font-family:var(--font-mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:rgba(251,246,234,.6);}
+.field input, .field textarea, .field select{
+  font-family:var(--font-body);font-size:15px;color:var(--ink);
+  background:var(--card);border:none;border-radius:8px;padding:11px 12px;
+  resize:vertical;
+}
+.field textarea.mono{font-family:var(--font-mono);font-size:12.5px;}
+.field .hint{font-family:var(--font-mono);font-size:11px;color:rgba(251,246,234,.5);line-height:1.5;}
+.modal-actions{display:flex;gap:10px;margin-top:6px;}
+.modal-actions.stack{flex-direction:column;}
+.import-preview{font-family:var(--font-mono);font-size:12px;color:var(--brass);margin:-6px 0 12px 0;}
+
+.rt-toolbar{display:flex;gap:6px;margin-bottom:6px;}
+.rt-btn{background:rgba(251,246,234,.1);border:1px solid rgba(251,246,234,.25);color:var(--card);
+  width:30px;height:28px;border-radius:6px;font-size:13px;display:flex;align-items:center;justify-content:center;}
+.rt-btn:hover{border-color:var(--brass);color:var(--brass);}
+.rt-btn.b{font-weight:700;}
+.rt-btn.i{font-style:italic;}
+.rt-btn.u{text-decoration:underline;}
+
+.radio-group{display:flex;flex-direction:column;gap:8px;}
+.radio-opt{display:flex;align-items:center;gap:10px;background:rgba(251,246,234,.06);border-radius:8px;padding:10px 12px;font-size:13.5px;}
+.radio-opt input{accent-color:var(--brass);width:16px;height:16px;flex:none;}
+.check-opt{display:flex;align-items:center;gap:10px;background:rgba(251,246,234,.06);border-radius:8px;padding:10px 12px;margin-bottom:6px;}
+.check-opt input{accent-color:var(--brass);width:16px;height:16px;flex:none;}
+.check-opt .cname{flex:1;font-size:13.5px;}
+.check-opt .cdue{font-family:var(--font-mono);font-size:11.5px;color:rgba(251,246,234,.55);}
+
+.export-box{width:100%;min-height:160px;font-family:var(--font-mono);font-size:12px;}
+
+.toast{
+  position:fixed;left:50%;bottom:calc(24px + var(--safe-bottom));transform:translateX(-50%);
+  background:var(--card);color:var(--ink);padding:10px 18px;border-radius:999px;
+  font-family:var(--font-mono);font-size:12.5px;box-shadow:0 4px 12px rgba(0,0,0,.3);
+  z-index:60;opacity:0;pointer-events:none;transition:opacity .25s;
+}
+.toast.show{opacity:1;}
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ===== HOME ===== -->
+  <section id="view-home">
+    <div class="topbar">
+      <h1>✦ en route vers l'ENS</h1>
+      <button class="icon-btn" id="openStatsBtn" aria-label="Statistiques" title="Statistiques">☙</button>
+    </div>
+    <main>
+      <div class="hero">
+        <p class="eyebrow" id="todayLabel"></p>
+        <h2>À réviser …</h2>
+        <button class="review-cta" id="reviewAllBtn">
+          <span>Réviser maintenant</span>
+          <span class="count" id="totalDueCount">0</span>
+        </button>
+      </div>
+
+      <div class="section-label">Paquets</div>
+      <div id="deckList"></div>
+      <div class="empty-state hidden" id="homeEmpty">
+        <p>Aucun paquet pour l'instant.<br>Touchez « + » pour créer le premier.</p>
+      </div>
+    </main>
+    <button class="fab" id="addFab" aria-label="Créer">+</button>
+  </section>
+
+  <!-- ===== DECK DETAIL ===== -->
+  <section id="view-deck" class="hidden">
+    <div class="topbar">
+      <button class="back" id="deckBackBtn" aria-label="Retour">←</button>
+      <h1 id="deckTitle">Paquet</h1>
+      <button class="stamp-btn" id="deckDeleteBtn">Suppr.</button>
+    </div>
+    <main>
+      <div class="section-label" id="deckDueLabel"></div>
+      <div class="folder-select-row">
+        <span>Dossier</span>
+        <select id="deckFolderSelect"></select>
+      </div>
+      <div class="deck-actions">
+        <button class="btn primary full" id="deckStudyBtn">Réviser</button>
+      </div>
+      <div class="deck-actions">
+        <button class="btn" id="deckAddCardBtn">+ Carte</button>
+        <button class="btn" id="deckImportBtn">Importer</button>
+      </div>
+      <div class="deck-actions">
+        <button class="btn full" id="deckExportBtn">Exporter la liste</button>
+      </div>
+      <div id="cardList"></div>
+      <div class="empty-state hidden" id="deckEmpty">
+        <p>Ce paquet est vide.<br>Ajoutez une carte ou importez une liste.</p>
+      </div>
+    </main>
+  </section>
+
+  <!-- ===== STUDY ===== -->
+  <section id="view-study" class="hidden">
+    <div class="topbar">
+      <button class="back" id="studyBackBtn" aria-label="Fermer">✕</button>
+      <h1 id="studyDeckName">Révision</h1>
+      <button class="icon-btn" id="studyEditBtn" aria-label="Modifier cette carte" title="Modifier cette carte">✎</button>
+    </div>
+    <main>
+      <div class="study-wrap">
+        <div class="study-progress" id="studyProgress"></div>
+        <div id="studyCardArea">
+          <div class="card-stage">
+            <div class="stack-deco s2"></div>
+            <div class="stack-deco s1"></div>
+            <div class="flip-card" id="flipCard">
+              <div class="flip-inner">
+                <div class="face front">
+                  <div class="face-label">Question</div>
+                  <div class="face-text" id="cardFrontText"></div>
+                  <div class="stamp" id="cardStampFront"></div>
+                </div>
+                <div class="face back">
+                  <div class="face-label">Réponse</div>
+                  <div class="face-text" id="cardBackText"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <p class="tap-hint" id="tapHint">Touchez la carte pour voir la réponse</p>
+          <div class="grade-row hidden" id="gradeRow">
+            <button class="grade-btn again" data-q="0">NA<span class="interval" id="intAgain"></span></button>
+            <button class="grade-btn hard" data-q="3">PA<span class="interval" id="intHard"></span></button>
+            <button class="grade-btn good" data-q="4">AA<span class="interval" id="intGood"></span></button>
+            <button class="grade-btn easy" data-q="5">LA<span class="interval" id="intEasy"></span></button>
+          </div>
+        </div>
+        <div class="session-end hidden" id="sessionEnd">
+          <p class="big">Terminé pour l'instant</p>
+          <p>Plus aucune carte à réviser ici.</p>
+          <button class="btn primary" id="sessionEndBtn">Retour</button>
+        </div>
+      </div>
+    </main>
+  </section>
+
+  <!-- ===== STATS ===== -->
+  <section id="view-stats" class="hidden">
+    <div class="topbar">
+      <button class="back" id="statsBackBtn" aria-label="Retour">←</button>
+      <h1>Statistiques</h1>
+    </div>
+    <main id="statsMain"></main>
+  </section>
+
+</div>
+
+<!-- ===== MODAL: menu du + ===== -->
+<div class="modal-backdrop hidden" id="modalFabMenu">
+  <div class="modal">
+    <h3>Créer</h3>
+    <div class="modal-actions stack">
+      <button class="btn primary full" id="fabNewDeck">+ Nouveau paquet</button>
+      <button class="btn full" id="fabNewFolder">+ Nouveau dossier</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: add deck ===== -->
+<div class="modal-backdrop hidden" id="modalDeck">
+  <div class="modal">
+    <h3>Nouveau paquet</h3>
+    <div class="field">
+      <label for="newDeckName">Nom</label>
+      <input type="text" id="newDeckName" placeholder="Ex. Vocabulaire allemand">
+    </div>
+    <div class="field">
+      <label for="newDeckFolder">Dossier</label>
+      <select id="newDeckFolder"></select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" id="cancelDeck">Annuler</button>
+      <button class="btn primary" id="saveDeck">Créer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: add folder ===== -->
+<div class="modal-backdrop hidden" id="modalFolder">
+  <div class="modal">
+    <h3>Nouveau dossier</h3>
+    <div class="field">
+      <label for="newFolderName">Nom</label>
+      <input type="text" id="newFolderName" placeholder="Ex. Langues">
+    </div>
+    <div class="modal-actions">
+      <button class="btn" id="cancelFolder">Annuler</button>
+      <button class="btn primary" id="saveFolder">Créer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: add/edit card ===== -->
+<div class="modal-backdrop hidden" id="modalCard">
+  <div class="modal">
+    <h3 id="cardModalTitle">Nouvelle carte</h3>
+    <div class="field">
+      <label for="cardFrontInput">Recto (terme)</label>
+      <div class="rt-toolbar" data-target="cardFrontInput">
+        <button type="button" class="rt-btn b" data-marker="**">G</button>
+        <button type="button" class="rt-btn i" data-marker="_">I</button>
+        <button type="button" class="rt-btn u" data-marker="__">S</button>
+      </div>
+      <textarea id="cardFrontInput" rows="2"></textarea>
+    </div>
+    <div class="field">
+      <label for="cardBackInput">Verso (définition)</label>
+      <div class="rt-toolbar" data-target="cardBackInput">
+        <button type="button" class="rt-btn b" data-marker="**">G</button>
+        <button type="button" class="rt-btn i" data-marker="_">I</button>
+        <button type="button" class="rt-btn u" data-marker="__">S</button>
+      </div>
+      <textarea id="cardBackInput" rows="3"></textarea>
+      <p class="hint">**gras**, _italique_, __souligné__. Un « \ » démarre une nouvelle ligne, moins mise en valeur que la première.</p>
+    </div>
+    <div class="modal-actions">
+      <button class="btn danger hidden" id="deleteCard">Supprimer</button>
+      <button class="btn" id="cancelCard">Annuler</button>
+      <button class="btn primary" id="saveCard">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: import list ===== -->
+<div class="modal-backdrop hidden" id="modalImport">
+  <div class="modal">
+    <h3>Importer une liste</h3>
+    <div class="field">
+      <label for="importText">Une entrée par ligne</label>
+      <textarea id="importText" class="mono" rows="8" placeholder="chat	cat&#10;chien : dog&#10;maison, house"></textarea>
+      <p class="hint">Séparez le recto et le verso par une tabulation, « : », une virgule, un point-virgule ou « - ». Une ligne = une carte.</p>
+    </div>
+    <p class="import-preview" id="importPreview"></p>
+    <div class="modal-actions">
+      <button class="btn" id="cancelImport">Annuler</button>
+      <button class="btn primary" id="confirmImport">Importer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: export list ===== -->
+<div class="modal-backdrop hidden" id="modalExport">
+  <div class="modal">
+    <h3>Exporter la liste</h3>
+    <div class="field">
+      <label>Format « terme : définition », une ligne par carte</label>
+      <textarea class="export-box mono" id="exportText" readonly></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" id="closeExport">Fermer</button>
+      <button class="btn" id="copyExport">Copier</button>
+      <button class="btn primary" id="downloadExport">Télécharger .txt</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: paramètres de révision ===== -->
+<div class="modal-backdrop hidden" id="modalReview">
+  <div class="modal">
+    <h3>Réviser</h3>
+
+    <div class="field" id="reviewFoldersField">
+      <label>Dossiers à inclure</label>
+      <div id="reviewFolderChecks"></div>
+    </div>
+
+    <div class="field">
+      <label>Sens de révision</label>
+      <div class="radio-group">
+        <label class="radio-opt"><input type="radio" name="reviewDir" value="front-back"> Terme → définition</label>
+        <label class="radio-opt"><input type="radio" name="reviewDir" value="back-front"> Définition → terme</label>
+        <label class="radio-opt"><input type="radio" name="reviewDir" value="random"> Les deux, aléatoirement</label>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Options</label>
+      <label class="check-opt"><input type="checkbox" id="reviewForce"><span class="cname">Forcer (même les cartes pas encore dues)</span></label>
+      <label class="check-opt"><input type="checkbox" id="reviewShuffle"><span class="cname">Ordre aléatoire des cartes</span></label>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn" id="cancelReview">Annuler</button>
+      <button class="btn primary" id="startReviewBtn">Commencer</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ================= stockage ================= */
+const LS_DECKS = 'fiches_decks_v1';
+const LS_CARDS = 'fiches_cards_v1';
+const LS_FOLDERS = 'fiches_folders_v1';
+const LS_PREF_DIR = 'fiches_pref_direction_v1';
+const LS_DAILY = 'fiches_daily_stats_v1';
+
+function loadJSON(key, fallback){ try{ const r = localStorage.getItem(key); return r ? JSON.parse(r) : fallback; }catch(e){ return fallback; } }
+function saveJSON(key, val){ try{ localStorage.setItem(key, JSON.stringify(val)); }catch(e){} }
+
+let decks = loadJSON(LS_DECKS, {});     // { id: {id, name, folderId, createdAt} }
+let cards = loadJSON(LS_CARDS, {});     // { id: {id, deckId, front, back, interval, repetition, ease, due, createdAt} }
+let folders = loadJSON(LS_FOLDERS, {}); // { id: {id, name, createdAt} }
+let dailyStats = loadJSON(LS_DAILY, {}); // { 'YYYY-MM-DD': {reviews, totalCards, avgMastery} }
+
+function persistDecks(){ saveJSON(LS_DECKS, decks); }
+function persistCards(){ saveJSON(LS_CARDS, cards); snapshotToday(); }
+function persistFolders(){ saveJSON(LS_FOLDERS, folders); }
+function persistDaily(){ saveJSON(LS_DAILY, dailyStats); }
+
+function makeId(prefix){ return prefix + '_' + Date.now() + '_' + Math.random().toString(36).slice(2,7); }
+
+/* ================= dates ================= */
+function todayStr(){
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function dateKeyMinus(days){
+  const d = new Date();
+  d.setDate(d.getDate() - days);
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function addDaysStr(days){
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function isDue(card){
+  return card.due <= todayStr();
+}
+const MONTHS_ABBR = ['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
+function formatStampDate(dateStr){
+  const [y,m,d] = dateStr.split('-').map(Number);
+  return `${d} ${MONTHS_ABBR[m-1]} ${y}`;
+}
+function formatIntervalPreview(days){
+  if(days < 1) return '<1 j';
+  if(days === 1) return '1 j';
+  if(days < 30) return days + ' j';
+  if(days < 365) return Math.round(days/30) + ' mois';
+  return Math.round(days/365) + ' an' + (Math.round(days/365)>1?'s':'');
+}
+
+/* ================= SM-2 =================*/
+/* ================= SM-2 =================*/
+function scheduleCard(card, quality){
+  const next = { ...card };
+  if(quality < 3){
+    next.repetition = 0;
+    next.interval = 0;
+    next.due = todayStr();
+  } else {
+    if(next.repetition === 0) next.interval = 1;
+    else if(next.repetition === 1) next.interval = 6;
+    else next.interval = Math.round(next.interval * next.ease);
+    next.repetition = (next.repetition || 0) + 1;
+    next.due = addDaysStr(next.interval);
+  }
+  next.ease = Math.max(1.3, (next.ease || 2.5) + (0.1 - (5-quality)*(0.08+(5-quality)*0.02)));
+  return next;
+}
+function previewInterval(card, quality){
+  return quality < 3 ? null : scheduleCard(card, quality).interval;
+}
+const REQUEUE_GAP = 3; // combien de cartes plus loin une "NA" resurgit dans la session en cours
+
+/* ================= maîtrise ================= */
+// Simplification assumée : une carte est considérée "pleinement maîtrisée" (100%) à partir d'un
+// intervalle de 21 jours (seuil classique de carte "mature"), et 0% pour une carte neuve.
+// C'est un indicateur relatif, pas une vraie probabilité de rétention (il faudrait un modèle
+// type FSRS pour ça) — mais il donne une tendance fiable et cohérente dans le temps.
+const MASTERY_CAP_DAYS = 21;
+function masteryPct(card){
+  return Math.max(0, Math.min(100, Math.round((card.interval||0) / MASTERY_CAP_DAYS * 100)));
+}
+function deckMasteryPct(deckId){
+  const arr = cardsForDeck(deckId);
+  if(arr.length === 0) return null;
+  return Math.round(arr.reduce((s,c)=>s+masteryPct(c),0) / arr.length);
+}
+
+/* ================= stats quotidiennes (pour les graphiques) ================= */
+function snapshotToday(){
+  const t = todayStr();
+  const allCards = Object.values(cards);
+  const avgMastery = allCards.length ? Math.round(allCards.reduce((s,c)=>s+masteryPct(c),0)/allCards.length) : 0;
+  const existing = dailyStats[t] || { reviews: 0 };
+  dailyStats[t] = { reviews: existing.reviews || 0, totalCards: allCards.length, avgMastery };
+  persistDaily();
+}
+function recordReview(){
+  const t = todayStr();
+  if(!dailyStats[t]) dailyStats[t] = { reviews: 0, totalCards: 0, avgMastery: 0 };
+  dailyStats[t].reviews += 1;
+  persistDaily();
+  snapshotToday();
+}
+function lastNDaysSeries(n){
+  const out = [];
+  let lastMastery = 0, lastCount = 0;
+  for(let i = n-1; i >= 0; i--){
+    const key = dateKeyMinus(i);
+    const entry = dailyStats[key];
+    if(entry){
+      if(entry.totalCards !== undefined) lastCount = entry.totalCards;
+      if(entry.avgMastery !== undefined) lastMastery = entry.avgMastery;
+    }
+    out.push({ date:key, reviews: (entry && entry.reviews) || 0, totalCards: lastCount, avgMastery: lastMastery });
+  }
+  return out;
+}
+function computeStreak(){
+  let streak = 0;
+  const startOffset = dailyStats[todayStr()] && dailyStats[todayStr()].reviews > 0 ? 0 : 1;
+  let i = startOffset;
+  while(dailyStats[dateKeyMinus(i)] && dailyStats[dateKeyMinus(i)].reviews > 0){ streak++; i++; }
+  return streak;
+}
+
+/* ================= mise en forme (gras / italique / souligné / lignes) ================= */
+function escapeHTML(s){
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function renderMarkup(text){
+  let html = escapeHTML(text);
+  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  html = html.replace(/__(.+?)__/g, '<u>$1</u>');
+  html = html.replace(/_(.+?)_/g, '<em>$1</em>');
+  return html;
+}
+// Rendu spécifique à la DÉFINITION (verso) : "\" = retour à la ligne. La première ligne reste
+// mise en valeur normalement, les suivantes sont visuellement secondaires (opacité + taille
+// réduites), mais gardent exactement la même hauteur de ligne (28px, voir CSS .def-line) que les
+// lignes bleues de la fiche, pour rester synchronisées avec elles quel que soit leur nombre.
+function renderDefinition(text){
+  const lines = text.split('\\');
+  return lines.map((line, i) => `<div class="def-line${i>0 ? ' secondary' : ''}">${renderMarkup(line.trim())}</div>`).join('');
+}
+// Aperçu compact une ligne (listes) : les retours à la ligne volontaires deviennent " / ".
+function renderMarkupInline(text){
+  return renderMarkup(text.split('\\').map(s=>s.trim()).join(' / '));
+}
+
+/* ================= toast ================= */
+let toastTimer;
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=> t.classList.remove('show'), 2200);
+}
+
+/* ================= navigation ================= */
+const views = {
+  home: document.getElementById('view-home'),
+  deck: document.getElementById('view-deck'),
+  study: document.getElementById('view-study'),
+  stats: document.getElementById('view-stats'),
+};
+let currentDeckId = null;
+let studyQueue = [];  // [{cardId, reversed}]
+let studyIndex = 0;
+let studyScopeDeckId = null; // paquet unique en cours de révision, ou null si multi-dossiers
+let cardRevealed = false;
+
+function showView(name){
+  Object.values(views).forEach(v => v.classList.add('hidden'));
+  views[name].classList.remove('hidden');
+}
+
+/* ================= dossiers / paquets : requêtes ================= */
+function cardsForDeck(deckId){
+  return Object.values(cards).filter(c => c.deckId === deckId);
+}
+function dueCardsForDeck(deckId){
+  return cardsForDeck(deckId).filter(isDue);
+}
+function decksInFolder(folderId){
+  return Object.values(decks).filter(d => (d.folderId || null) === folderId);
+}
+function allDueCards(){
+  return Object.values(cards).filter(isDue);
+}
+function getFolderBuckets(){
+  const buckets = Object.values(folders).sort((a,b)=>a.createdAt-b.createdAt).map(f => ({
+    id: f.id, name: f.name,
+    deckIds: decksInFolder(f.id).map(d=>d.id),
+  }));
+  const orphanDecks = decksInFolder(null);
+  if(orphanDecks.length > 0){
+    buckets.push({ id: null, name: 'Sans dossier', deckIds: orphanDecks.map(d=>d.id) });
+  }
+  buckets.forEach(b => {
+    b.due = b.deckIds.reduce((sum, id) => sum + dueCardsForDeck(id).length, 0);
+    b.total = b.deckIds.reduce((sum, id) => sum + cardsForDeck(id).length, 0);
+  });
+  return buckets;
+}
+
+/* ================= rendu : accueil ================= */
+function renderHome(){
+  const todayLabel = document.getElementById('todayLabel');
+  const now = new Date();
+  todayLabel.textContent = now.toLocaleDateString('fr-CH', { weekday:'long', day:'numeric', month:'long' });
+
+  const totalDue = allDueCards().length;
+  const totalCardsCount = Object.keys(cards).length;
+  document.getElementById('totalDueCount').textContent = totalDue;
+  const reviewBtn = document.getElementById('reviewAllBtn');
+  reviewBtn.classList.toggle('empty', totalDue === 0);
+  reviewBtn.querySelector('span').textContent = totalDue === 0 ? 'Rien à réviser aujourd\'hui' : 'Réviser maintenant';
+  reviewBtn.style.opacity = totalCardsCount === 0 ? '.5' : '1';
+
+  const list = document.getElementById('deckList');
+  list.innerHTML = '';
+  const deckArr = Object.values(decks);
+  document.getElementById('homeEmpty').classList.toggle('hidden', deckArr.length > 0);
+
+  const buckets = getFolderBuckets();
+  const bucketedDeckIds = new Set(buckets.flatMap(b => b.deckIds));
+  const looseDecks = deckArr.filter(d => !bucketedDeckIds.has(d.id));
+
+  buckets.forEach(bucket => {
+    if(bucket.deckIds.length === 0 && bucket.id === null) return;
+    const group = document.createElement('div');
+    group.className = 'folder-group';
+    const header = document.createElement('div');
+    header.className = 'folder-header';
+    header.innerHTML = `
+      <span class="ficon">${bucket.id ? '☞' : '·'}</span>
+      <span class="fname">${escapeHTML(bucket.name)}</span>
+      <span class="due-badge ${bucket.due===0?'zero':''}">${bucket.due}</span>
+      ${bucket.id ? '<button class="fbtn" data-act="rename">✎</button><button class="fbtn" data-act="del">✕</button>' : ''}
+    `;
+    if(bucket.id){
+      header.querySelector('[data-act="rename"]').addEventListener('click', (e)=>{ e.stopPropagation(); renameFolder(bucket.id); });
+      header.querySelector('[data-act="del"]').addEventListener('click', (e)=>{ e.stopPropagation(); deleteFolder(bucket.id); });
+    }
+    group.appendChild(header);
+
+    const decksWrap = document.createElement('div');
+    decksWrap.className = 'folder-decks';
+    bucket.deckIds
+      .map(id => decks[id])
+      .sort((a,b)=>a.createdAt-b.createdAt)
+      .forEach(deck => decksWrap.appendChild(renderDeckRow(deck)));
+    group.appendChild(decksWrap);
+    list.appendChild(group);
+  });
+  looseDecks.forEach(deck => list.appendChild(renderDeckRow(deck)));
+}
+
+function renderDeckRow(deck){
+  const total = cardsForDeck(deck.id).length;
+  const due = dueCardsForDeck(deck.id).length;
+  const mastery = deckMasteryPct(deck.id);
+  const row = document.createElement('div');
+  row.className = 'deck-row';
+  row.innerHTML = `
+    <div class="info">
+      <p class="name">${escapeHTML(deck.name)}</p>
+      <p class="meta">${total} carte${total>1?'s':''}${mastery!==null ? ' · ' + mastery + '% maîtrisé' : ''}</p>
+    </div>
+    <span class="due-badge ${due===0?'zero':''}">${due}</span>
+    <span class="chevron">›</span>
+  `;
+  row.addEventListener('click', () => openDeck(deck.id));
+  return row;
+}
+
+/* ================= rendu : détail paquet ================= */
+function openDeck(deckId){
+  currentDeckId = deckId;
+  renderDeck();
+  showView('deck');
+}
+
+function populateFolderSelect(selectEl, selectedId){
+  selectEl.innerHTML = '<option value="">Sans dossier</option>';
+  Object.values(folders).sort((a,b)=>a.createdAt-b.createdAt).forEach(f => {
+    const opt = document.createElement('option');
+    opt.value = f.id; opt.textContent = f.name;
+    if(f.id === selectedId) opt.selected = true;
+    selectEl.appendChild(opt);
+  });
+  if(!selectedId) selectEl.value = '';
+}
+
+function renderDeck(){
+  const deck = decks[currentDeckId];
+  if(!deck) return;
+  document.getElementById('deckTitle').textContent = deck.name;
+  const due = dueCardsForDeck(deck.id).length;
+  const total = cardsForDeck(deck.id).length;
+  const mastery = deckMasteryPct(deck.id);
+  document.getElementById('deckDueLabel').textContent =
+    `${total} carte${total>1?'s':''} · ${due} à réviser` + (mastery!==null ? ` · ${mastery}% maîtrisé` : '');
+  document.getElementById('deckStudyBtn').disabled = total === 0;
+
+  populateFolderSelect(document.getElementById('deckFolderSelect'), deck.folderId || null);
+
+  const list = document.getElementById('cardList');
+  list.innerHTML = '';
+  const arr = cardsForDeck(deck.id).sort((a,b)=> b.createdAt - a.createdAt);
+  document.getElementById('deckEmpty').classList.toggle('hidden', arr.length > 0);
+  arr.forEach(c => {
+    const m = masteryPct(c);
+    const row = document.createElement('div');
+    row.className = 'card-row';
+    row.innerHTML = `
+      <div class="txt">
+        <p class="front">${renderMarkupInline(c.front)}</p>
+        <p class="back">${renderMarkupInline(c.back)}</p>
+      </div>
+      <div class="side">
+        <span class="mastery-badge ${c.interval?'':'new'}">${c.interval ? m+'%' : 'neuf'}</span>
+        <button class="edit-btn">Modifier</button>
+      </div>
+    `;
+    row.querySelector('.edit-btn').addEventListener('click', () => openCardModal(c.id, 'deck'));
+    list.appendChild(row);
+  });
+}
+
+document.getElementById('deckFolderSelect').addEventListener('change', (e) => {
+  const deck = decks[currentDeckId];
+  if(!deck) return;
+  deck.folderId = e.target.value || null;
+  persistDecks();
+  showToast('Dossier mis à jour');
+});
+
+/* ================= dossiers : actions ================= */
+function renameFolder(folderId){
+  const f = folders[folderId];
+  if(!f) return;
+  const name = prompt('Renommer le dossier :', f.name);
+  if(name === null) return;
+  const trimmed = name.trim();
+  if(!trimmed) return;
+  f.name = trimmed;
+  persistFolders();
+  renderHome();
+}
+function deleteFolder(folderId){
+  const f = folders[folderId];
+  if(!f) return;
+  if(!confirm(`Supprimer le dossier « ${f.name} » ? Les paquets qu'il contient seront conservés, sans dossier.`)) return;
+  decksInFolder(folderId).forEach(d => { d.folderId = null; });
+  delete folders[folderId];
+  persistFolders(); persistDecks();
+  renderHome();
+}
+
+/* ================= export ================= */
+const modalExport = document.getElementById('modalExport');
+document.getElementById('deckExportBtn').addEventListener('click', () => {
+  const arr = cardsForDeck(currentDeckId).sort((a,b)=>a.createdAt-b.createdAt);
+  const text = arr.map(c => `${c.front} : ${c.back}`).join('\n');
+  document.getElementById('exportText').value = text;
+  modalExport.classList.remove('hidden');
+});
+document.getElementById('closeExport').addEventListener('click', () => modalExport.classList.add('hidden'));
+modalExport.addEventListener('click', (e) => { if(e.target === modalExport) modalExport.classList.add('hidden'); });
+document.getElementById('copyExport').addEventListener('click', async () => {
+  const text = document.getElementById('exportText').value;
+  try{
+    await navigator.clipboard.writeText(text);
+    showToast('Copié dans le presse-papiers');
+  }catch(e){
+    document.getElementById('exportText').select();
+    showToast('Sélectionnez et copiez manuellement');
+  }
+});
+document.getElementById('downloadExport').addEventListener('click', () => {
+  const deck = decks[currentDeckId];
+  const text = document.getElementById('exportText').value;
+  const blob = new Blob([text], { type:'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = (deck ? deck.name.replace(/[^a-z0-9\-_ ]/gi,'').trim() || 'liste' : 'liste') + '.txt';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+});
+
+/* ================= étude ================= */
+function buildStudyQueue(cardIds, direction, shuffle){
+  let arr = cardIds.map(id => ({
+    cardId: id,
+    reversed: direction === 'back-front' ? true : (direction === 'random' ? Math.random() < 0.5 : false)
+  }));
+  if(shuffle){
+    for(let i = arr.length - 1; i > 0; i--){
+      const j = Math.floor(Math.random() * (i+1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+  }
+  return arr;
+}
+
+function startStudySession(cardIds, direction, shuffle, label, deckIdScope){
+  studyScopeDeckId = deckIdScope || null;
+  studyQueue = buildStudyQueue(cardIds, direction, shuffle);
+  studyIndex = 0;
+  document.getElementById('studyDeckName').textContent = label;
+  showView('study');
+  renderStudyCard();
+}
+
+function renderStudyCard(){
+  const area = document.getElementById('studyCardArea');
+  const end = document.getElementById('sessionEnd');
+  if(studyIndex >= studyQueue.length){
+    area.classList.add('hidden');
+    end.classList.remove('hidden');
+    return;
+  }
+  area.classList.remove('hidden');
+  end.classList.add('hidden');
+
+  const item = studyQueue[studyIndex];
+  const card = cards[item.cardId];
+  if(!card){ studyQueue.splice(studyIndex,1); renderStudyCard(); return; }
+
+  // card.back = toujours "la définition", quel que soit le sens de révision choisi : c'est donc
+  // toujours ce champ qui reçoit le traitement "\" + mise en forme secondaire (voir renderDefinition).
+  const questionIsBack = item.reversed;
+  const frontHTML = questionIsBack ? renderDefinition(card.back) : renderMarkup(card.front);
+  const backHTML  = questionIsBack ? renderMarkup(card.front)   : renderDefinition(card.back);
+
+  document.getElementById('studyProgress').textContent = `${studyIndex+1} / ${studyQueue.length}`;
+  document.getElementById('cardFrontText').innerHTML = frontHTML;
+  document.getElementById('cardBackText').innerHTML = backHTML;
+  document.getElementById('cardStampFront').textContent = formatStampDate(card.due);
+
+  const flip = document.getElementById('flipCard');
+  flip.classList.remove('flipped');
+  flip.style.transform = '';
+  cardRevealed = false;
+  document.getElementById('gradeRow').classList.add('hidden');
+  document.getElementById('tapHint').textContent = 'Touchez la carte pour voir la réponse';
+
+  document.getElementById('intAgain').textContent = 'bientôt';
+  document.getElementById('intHard').textContent = formatIntervalPreview(previewInterval(card,3));
+  document.getElementById('intGood').textContent = formatIntervalPreview(previewInterval(card,4));
+  document.getElementById('intEasy').textContent = formatIntervalPreview(previewInterval(card,5));
+}
+
+function gradeCurrentCard(quality){
+  const item = studyQueue[studyIndex];
+  cards[item.cardId] = scheduleCard(cards[item.cardId], quality);
+  persistCards();
+  recordReview();
+  if(quality < 3){
+    // Correctif principal (voir commentaire sur scheduleCard) : la carte revient plus loin dans
+    // LA MÊME session au lieu de disparaître jusqu'à demain.
+    const insertAt = Math.min(studyQueue.length, studyIndex + 1 + REQUEUE_GAP);
+    studyQueue.splice(insertAt, 0, item);
+  }
+  studyIndex += 1;
+  renderStudyCard();
+}
+
+/* ---- tap : révéler, puis "peek" recto/verso sans perdre la notation ---- */
+const flipEl = document.getElementById('flipCard');
+let suppressNextClick = false;
+flipEl.addEventListener('click', () => {
+  if(suppressNextClick){ suppressNextClick = false; return; }
+  if(!cardRevealed){
+    flipEl.classList.add('flipped');
+    cardRevealed = true;
+    document.getElementById('gradeRow').classList.remove('hidden');
+    document.getElementById('tapHint').textContent = 'Touchez pour retourner la carte';
+  } else {
+    flipEl.classList.toggle('flipped'); // revoir le recto, ou repasser au verso
+  }
+});
+
+/* ---- glisser à gauche = NA, à droite = LA (une fois la réponse vue) ---- */
+let touchStartX = 0, touchDeltaX = 0, isDragging = false;
+const SWIPE_THRESHOLD = 90;
+flipEl.addEventListener('touchstart', (e) => {
+  if(!cardRevealed) return;
+  touchStartX = e.touches[0].clientX;
+  touchDeltaX = 0;
+  isDragging = true;
+}, {passive:true});
+flipEl.addEventListener('touchmove', (e) => {
+  if(!isDragging) return;
+  touchDeltaX = e.touches[0].clientX - touchStartX;
+  flipEl.style.transition = 'none';
+  flipEl.style.transform = `translateX(${touchDeltaX}px) rotate(${touchDeltaX/18}deg)`;
+}, {passive:true});
+flipEl.addEventListener('touchend', () => {
+  if(!isDragging) return;
+  isDragging = false;
+  flipEl.style.transition = '';
+  if(touchDeltaX <= -SWIPE_THRESHOLD){
+    suppressNextClick = true;
+    flingAndGrade(0, -1);
+  } else if(touchDeltaX >= SWIPE_THRESHOLD){
+    suppressNextClick = true;
+    flingAndGrade(5, 1);
+  } else {
+    flipEl.style.transform = '';
+    if(Math.abs(touchDeltaX) > 10) suppressNextClick = true;
+  }
+});
+function flingAndGrade(quality, dir){
+  flipEl.style.transition = 'transform .22s ease';
+  flipEl.style.transform = `translateX(${dir*520}px) rotate(${dir*20}deg)`;
+  setTimeout(() => { gradeCurrentCard(quality); }, 200);
+}
+
+document.getElementById('gradeRow').addEventListener('click', (e) => {
+  const btn = e.target.closest('.grade-btn');
+  if(!btn || !cardRevealed) return;
+  gradeCurrentCard(parseInt(btn.dataset.q, 10));
+});
+
+document.addEventListener('keydown', (e) => {
+  if(views.study.classList.contains('hidden')) return;
+  if(e.code === 'Space'){
+    e.preventDefault();
+    if(!cardRevealed) flipEl.click();
+    return;
+  }
+  if(cardRevealed && ['1','2','3','4'].includes(e.key)){
+    const map = {1:0, 2:3, 3:4, 4:5};
+    gradeCurrentCard(map[e.key]);
+  }
+});
+
+function exitStudy(){
+  showView(studyScopeDeckId ? 'deck' : 'home');
+  renderHome();
+  if(studyScopeDeckId) renderDeck();
+}
+document.getElementById('sessionEndBtn').addEventListener('click', exitStudy);
+document.getElementById('studyBackBtn').addEventListener('click', exitStudy);
+
+// Modifier la carte en cours de révision, sans quitter la session
+document.getElementById('studyEditBtn').addEventListener('click', () => {
+  if(studyIndex >= studyQueue.length) return;
+  openCardModal(studyQueue[studyIndex].cardId, 'study');
+});
+
+/* ================= modale : paramètres de révision ================= */
+const modalReview = document.getElementById('modalReview');
+let reviewMode = null; // 'home' | 'deck'
+let reviewFolderSelection = new Set();
+
+function openReviewModal(mode){
+  reviewMode = mode;
+  const foldersField = document.getElementById('reviewFoldersField');
+  foldersField.classList.toggle('hidden', mode !== 'home');
+
+  let dueForScope = 0;
+  if(mode === 'home'){
+    const buckets = getFolderBuckets().filter(b => b.total > 0);
+    reviewFolderSelection = new Set(buckets.map(b => b.id === null ? 'none' : b.id));
+    dueForScope = allDueCards().length;
+    const wrap = document.getElementById('reviewFolderChecks');
+    wrap.innerHTML = '';
+    buckets.forEach(b => {
+      const key = b.id === null ? 'none' : b.id;
+      const row = document.createElement('label');
+      row.className = 'check-opt';
+      row.innerHTML = `
+        <input type="checkbox" checked data-key="${key}">
+        <span class="cname">${escapeHTML(b.name)}</span>
+        <span class="cdue">${b.due} due</span>
+      `;
+      row.querySelector('input').addEventListener('change', (e) => {
+        if(e.target.checked) reviewFolderSelection.add(key);
+        else reviewFolderSelection.delete(key);
+      });
+      wrap.appendChild(row);
+    });
+  } else {
+    dueForScope = dueCardsForDeck(currentDeckId).length;
+  }
+
+  const savedDir = localStorage.getItem(LS_PREF_DIR) || 'front-back';
+  document.querySelectorAll('input[name="reviewDir"]').forEach(r => { r.checked = (r.value === savedDir); });
+  document.getElementById('reviewForce').checked = dueForScope === 0;
+  document.getElementById('reviewShuffle').checked = false;
+
+  modalReview.classList.remove('hidden');
+}
+document.getElementById('cancelReview').addEventListener('click', () => modalReview.classList.add('hidden'));
+modalReview.addEventListener('click', (e) => { if(e.target === modalReview) modalReview.classList.add('hidden'); });
+
+function cardIdsForScope(deckIds, force){
+  const pool = deckIds.flatMap(id => cardsForDeck(id));
+  return (force ? pool : pool.filter(isDue)).map(c => c.id);
+}
+
+document.getElementById('startReviewBtn').addEventListener('click', () => {
+  const direction = document.querySelector('input[name="reviewDir"]:checked')?.value || 'front-back';
+  const force = document.getElementById('reviewForce').checked;
+  const shuffle = document.getElementById('reviewShuffle').checked;
+  localStorage.setItem(LS_PREF_DIR, direction);
+  modalReview.classList.add('hidden');
+
+  let ids, label, scopeDeckId;
+  if(reviewMode === 'deck'){
+    ids = cardIdsForScope([currentDeckId], force);
+    label = decks[currentDeckId].name;
+    scopeDeckId = currentDeckId;
+  } else {
+    const buckets = getFolderBuckets();
+    let deckIds = [];
+    buckets.forEach(b => {
+      const key = b.id === null ? 'none' : b.id;
+      if(reviewFolderSelection.has(key)) deckIds = deckIds.concat(b.deckIds);
+    });
+    ids = cardIdsForScope(deckIds, force);
+    label = 'Révision';
+    scopeDeckId = null;
+  }
+
+  if(ids.length === 0){ showToast('Aucune carte à réviser avec ces critères'); return; }
+  startStudySession(ids, direction, shuffle, label, scopeDeckId);
+});
+
+/* ================= navigation : boutons ================= */
+document.getElementById('reviewAllBtn').addEventListener('click', () => {
+  if(Object.keys(cards).length === 0) return;
+  openReviewModal('home');
+});
+document.getElementById('deckBackBtn').addEventListener('click', () => { showView('home'); renderHome(); });
+document.getElementById('deckStudyBtn').addEventListener('click', () => {
+  if(cardsForDeck(currentDeckId).length === 0) return;
+  openReviewModal('deck');
+});
+document.getElementById('openStatsBtn').addEventListener('click', () => { renderStats(); showView('stats'); });
+document.getElementById('statsBackBtn').addEventListener('click', () => { showView('home'); renderHome(); });
+
+/* ================= modale : menu + ================= */
+const modalFabMenu = document.getElementById('modalFabMenu');
+document.getElementById('addFab').addEventListener('click', () => modalFabMenu.classList.remove('hidden'));
+modalFabMenu.addEventListener('click', (e) => { if(e.target === modalFabMenu) modalFabMenu.classList.add('hidden'); });
+
+/* ================= modale : nouveau paquet ================= */
+const modalDeck = document.getElementById('modalDeck');
+document.getElementById('fabNewDeck').addEventListener('click', () => {
+  modalFabMenu.classList.add('hidden');
+  document.getElementById('newDeckName').value = '';
+  populateFolderSelect(document.getElementById('newDeckFolder'), null);
+  modalDeck.classList.remove('hidden');
+  document.getElementById('newDeckName').focus();
+});
+document.getElementById('cancelDeck').addEventListener('click', () => modalDeck.classList.add('hidden'));
+modalDeck.addEventListener('click', (e) => { if(e.target === modalDeck) modalDeck.classList.add('hidden'); });
+document.getElementById('saveDeck').addEventListener('click', () => {
+  const name = document.getElementById('newDeckName').value.trim();
+  if(!name) return;
+  const folderId = document.getElementById('newDeckFolder').value || null;
+  const id = makeId('deck');
+  decks[id] = { id, name, folderId, createdAt: Date.now() };
+  persistDecks();
+  modalDeck.classList.add('hidden');
+  renderHome();
+  showToast('Paquet créé');
+});
+
+document.getElementById('deckDeleteBtn').addEventListener('click', () => {
+  const deck = decks[currentDeckId];
+  if(!deck) return;
+  if(!confirm(`Supprimer le paquet « ${deck.name} » et toutes ses cartes ?`)) return;
+  cardsForDeck(currentDeckId).forEach(c => delete cards[c.id]);
+  delete decks[currentDeckId];
+  persistDecks(); persistCards();
+  showView('home');
+  renderHome();
+});
+
+/* ================= modale : nouveau dossier ================= */
+const modalFolder = document.getElementById('modalFolder');
+document.getElementById('fabNewFolder').addEventListener('click', () => {
+  modalFabMenu.classList.add('hidden');
+  document.getElementById('newFolderName').value = '';
+  modalFolder.classList.remove('hidden');
+  document.getElementById('newFolderName').focus();
+});
+document.getElementById('cancelFolder').addEventListener('click', () => modalFolder.classList.add('hidden'));
+modalFolder.addEventListener('click', (e) => { if(e.target === modalFolder) modalFolder.classList.add('hidden'); });
+document.getElementById('saveFolder').addEventListener('click', () => {
+  const name = document.getElementById('newFolderName').value.trim();
+  if(!name) return;
+  const id = makeId('folder');
+  folders[id] = { id, name, createdAt: Date.now() };
+  persistFolders();
+  modalFolder.classList.add('hidden');
+  renderHome();
+  showToast('Dossier créé');
+});
+
+/* ================= modale : carte (+ barre de mise en forme) ================= */
+const modalCard = document.getElementById('modalCard');
+let editingCardId = null;
+let cardModalContext = 'deck'; // 'deck' | 'study' — détermine quoi rafraîchir après enregistrement
+function openCardModal(cardId, context){
+  editingCardId = cardId;
+  cardModalContext = context || 'deck';
+  const isEdit = !!cardId;
+  document.getElementById('cardModalTitle').textContent = isEdit ? 'Modifier la carte' : 'Nouvelle carte';
+  document.getElementById('deleteCard').classList.toggle('hidden', !isEdit);
+  document.getElementById('cardFrontInput').value = isEdit ? cards[cardId].front : '';
+  document.getElementById('cardBackInput').value = isEdit ? cards[cardId].back : '';
+  modalCard.classList.remove('hidden');
+  document.getElementById('cardFrontInput').focus();
+}
+document.getElementById('deckAddCardBtn').addEventListener('click', () => openCardModal(null, 'deck'));
+document.getElementById('cancelCard').addEventListener('click', () => modalCard.classList.add('hidden'));
+modalCard.addEventListener('click', (e) => { if(e.target === modalCard) modalCard.classList.add('hidden'); });
+document.getElementById('saveCard').addEventListener('click', () => {
+  const front = document.getElementById('cardFrontInput').value.trim();
+  const back = document.getElementById('cardBackInput').value.trim();
+  if(!front || !back) { showToast('Recto et verso sont requis'); return; }
+  if(editingCardId){
+    cards[editingCardId].front = front;
+    cards[editingCardId].back = back;
+  } else {
+    const id = makeId('card');
+    cards[id] = { id, deckId: currentDeckId, front, back, interval:0, repetition:0, ease:2.5, due: todayStr(), createdAt: Date.now() };
+  }
+  persistCards();
+  modalCard.classList.add('hidden');
+  if(cardModalContext === 'study') renderStudyCard(); else renderDeck();
+});
+document.getElementById('deleteCard').addEventListener('click', () => {
+  if(!editingCardId) return;
+  if(!confirm('Supprimer cette carte ?')) return;
+  const deletedId = editingCardId;
+  delete cards[deletedId];
+  persistCards();
+  modalCard.classList.add('hidden');
+  if(cardModalContext === 'study'){
+    studyQueue = studyQueue.filter(item => item.cardId !== deletedId);
+    renderStudyCard();
+  } else {
+    renderDeck();
+  }
+});
+
+// Barre d'outils G / I / S : entoure la sélection du texte dans le champ ciblé.
+function wrapSelection(textarea, marker){
+  const start = textarea.selectionStart;
+  const end = textarea.selectionEnd;
+  const val = textarea.value;
+  const selected = val.slice(start, end) || 'texte';
+  textarea.value = val.slice(0, start) + marker + selected + marker + val.slice(end);
+  const cursorStart = start + marker.length;
+  textarea.focus();
+  textarea.setSelectionRange(cursorStart, cursorStart + selected.length);
+}
+document.querySelectorAll('.rt-toolbar').forEach(toolbar => {
+  const targetId = toolbar.dataset.target;
+  toolbar.querySelectorAll('.rt-btn').forEach(btn => {
+    btn.addEventListener('click', () => wrapSelection(document.getElementById(targetId), btn.dataset.marker));
+  });
+});
+
+/* ================= modale : import de liste ================= */
+const modalImport = document.getElementById('modalImport');
+function parseImportLine(line){
+  // essaie tabulation, ":", " - ", ";", puis "," (du séparateur le plus explicite au plus
+  // ambigu, pour éviter de couper une définition qui contiendrait elle-même une virgule)
+  const seps = ['\t', ':', ' - ', ';', ','];
+  for(const sep of seps){
+    const idx = line.indexOf(sep);
+    if(idx > 0 && idx < line.length - sep.length){
+      const front = line.slice(0, idx).trim();
+      const back = line.slice(idx + sep.length).trim();
+      if(front && back) return { front, back };
+    }
+  }
+  return null;
+}
+function updateImportPreview(){
+  const text = document.getElementById('importText').value;
+  const lines = text.split('\n').map(l=>l.trim()).filter(Boolean);
+  let ok = 0, bad = 0;
+  lines.forEach(l => { if(parseImportLine(l)) ok++; else bad++; });
+  const preview = document.getElementById('importPreview');
+  if(lines.length === 0){ preview.textContent = ''; return; }
+  preview.textContent = `${ok} carte${ok>1?'s':''} détectée${ok>1?'s':''}` + (bad ? ` · ${bad} ligne${bad>1?'s':''} ignorée${bad>1?'s':''}` : '');
+}
+document.getElementById('importText').addEventListener('input', updateImportPreview);
+document.getElementById('deckImportBtn').addEventListener('click', () => {
+  document.getElementById('importText').value = '';
+  updateImportPreview();
+  modalImport.classList.remove('hidden');
+  document.getElementById('importText').focus();
+});
+document.getElementById('cancelImport').addEventListener('click', () => modalImport.classList.add('hidden'));
+modalImport.addEventListener('click', (e) => { if(e.target === modalImport) modalImport.classList.add('hidden'); });
+document.getElementById('confirmImport').addEventListener('click', () => {
+  const text = document.getElementById('importText').value;
+  const lines = text.split('\n').map(l=>l.trim()).filter(Boolean);
+  let created = 0;
+  lines.forEach(line => {
+    const parsed = parseImportLine(line);
+    if(!parsed) return;
+    const id = makeId('card');
+    cards[id] = { id, deckId: currentDeckId, front: parsed.front, back: parsed.back, interval:0, repetition:0, ease:2.5, due: todayStr(), createdAt: Date.now() };
+    created++;
+  });
+  persistCards();
+  modalImport.classList.add('hidden');
+  renderDeck();
+  showToast(`${created} carte${created>1?'s':''} importée${created>1?'s':''}`);
+});
+
+/* ================= statistiques : graphiques SVG maison ================= */
+function buildLineChartSVG(points, opts){
+  opts = opts || {};
+  const w = 300, h = 90, padL = 4, padR = 4, padT = 8, padB = 4;
+  if(points.length === 0) return '<svg></svg>';
+  const vals = points.map(p=>p.value);
+  const max = opts.max !== undefined ? opts.max : Math.max(1, ...vals);
+  const min = opts.min !== undefined ? opts.min : 0;
+  const range = (max - min) || 1;
+  const stepX = points.length > 1 ? (w-padL-padR)/(points.length-1) : 0;
+  const coords = points.map((p,i)=>{
+    const x = padL + i*stepX;
+    const y = padT + (h-padT-padB) * (1 - (p.value-min)/range);
+    return [x,y];
+  });
+  const path = coords.map((c,i)=> (i===0?'M':'L')+c[0].toFixed(1)+','+c[1].toFixed(1)).join(' ');
+  const area = path + ` L${coords[coords.length-1][0].toFixed(1)},${h-padB} L${coords[0][0].toFixed(1)},${h-padB} Z`;
+  return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" style="width:100%;height:90px;display:block;">
+    <path d="${area}" fill="var(--brass)" opacity="0.16"></path>
+    <path d="${path}" fill="none" stroke="var(--brass-deep)" stroke-width="2.2" vector-effect="non-scaling-stroke"></path>
+  </svg>`;
+}
+function buildBarChartSVG(points){
+  const w = 300, h = 90, padB = 4, gap = 2;
+  if(points.length === 0) return '<svg></svg>';
+  const max = Math.max(1, ...points.map(p=>p.value));
+  const bw = (w/points.length) - gap;
+  const bars = points.map((p,i)=>{
+    const bh = (p.value/max) * (h-padB-6);
+    const x = i*(w/points.length) + gap/2;
+    const y = h - padB - bh;
+    return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${Math.max(0,bw).toFixed(1)}" height="${Math.max(0,bh).toFixed(1)}" fill="var(--brass-deep)" rx="1.5"></rect>`;
+  }).join('');
+  return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" style="width:100%;height:90px;display:block;">${bars}</svg>`;
+}
+
+function renderStats(){
+  snapshotToday();
+  const series = lastNDaysSeries(30);
+  const totalCardsCount = Object.keys(cards).length;
+  const totalDecks = Object.keys(decks).length;
+  const dueToday = allDueCards().length;
+  const reviewsToday = (dailyStats[todayStr()] && dailyStats[todayStr()].reviews) || 0;
+  const streak = computeStreak();
+  const masteredCount = Object.values(cards).filter(c => masteryPct(c) >= 80).length;
+
+  const deckRows = Object.values(decks).map(d => {
+    const total = cardsForDeck(d.id).length;
+    const due = dueCardsForDeck(d.id).length;
+    const m = deckMasteryPct(d.id);
+    return { name: d.name, total, due, mastery: m };
+  }).sort((a,b)=> b.total - a.total);
+
+  const main = document.getElementById('statsMain');
+  main.innerHTML = `
+    <div class="stats-grid">
+      <div class="stat-tile"><div class="val">${totalCardsCount}</div><div class="lbl">Termes au total</div></div>
+      <div class="stat-tile"><div class="val">${totalDecks}</div><div class="lbl">Paquets</div></div>
+      <div class="stat-tile"><div class="val">${dueToday}</div><div class="lbl">Dues aujourd'hui</div></div>
+      <div class="stat-tile"><div class="val">${reviewsToday}</div><div class="lbl">Révisées aujourd'hui</div></div>
+      <div class="stat-tile"><div class="val">${streak} j</div><div class="lbl">Série en cours</div></div>
+      <div class="stat-tile"><div class="val">${masteredCount}</div><div class="lbl">Maîtrisées (≥80%)</div></div>
+    </div>
+
+    <div class="chart-card">
+      <h4><span>Assiduité</span><span>30 derniers jours</span></h4>
+      ${buildBarChartSVG(series.map(s=>({value:s.reviews})))}
+    </div>
+
+    <div class="chart-card">
+      <h4><span>Maîtrise globale</span><span>${series[series.length-1].avgMastery}%</span></h4>
+      ${buildLineChartSVG(series.map(s=>({value:s.avgMastery})), {min:0, max:100})}
+    </div>
+
+    <div class="chart-card">
+      <h4><span>Nombre de termes</span><span>${series[series.length-1].totalCards}</span></h4>
+      ${buildLineChartSVG(series.map(s=>({value:s.totalCards})))}
+    </div>
+
+    <table class="stats-table">
+      <thead><tr><th>Paquet</th><th>Total</th><th>Dues</th><th>Maîtrise</th></tr></thead>
+      <tbody>
+        ${deckRows.map(r => `<tr><td>${escapeHTML(r.name)}</td><td>${r.total}</td><td>${r.due}</td><td>${r.mastery===null?'—':r.mastery+'%'}</td></tr>`).join('') || '<tr><td colspan="4">Aucun paquet.</td></tr>'}
+      </tbody>
+    </table>
+  `;
+}
+
+/* ================= service worker ================= */
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
+
+/* ================= init ================= */
+snapshotToday();
+renderHome();
+showView('home');
+</script>
+</body>
+</html>
