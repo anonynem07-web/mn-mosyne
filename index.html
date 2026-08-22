@@ -6,8 +6,9 @@
 <title>Fiches — répétition espacée</title>
 <meta name="theme-color" content="#3E3226">
 <link rel="manifest" href="manifest.json">
-<link rel="icon" href="icons/icon-192.png">
-<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,500&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -84,13 +85,19 @@ main{flex:1;padding:6px 18px calc(24px + var(--safe-bottom)) 18px;overflow-y:aut
 
 .section-label{font-family:var(--font-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:rgba(251,246,234,.55);margin:24px 4px 10px 4px;display:flex;align-items:center;justify-content:space-between;}
 
+.due-badge{font-family:var(--font-mono);font-size:12px;font-weight:600;background:var(--brass);color:var(--walnut-deep);border-radius:999px;padding:4px 10px;flex:none;line-height:1.2;}
+.due-badge.zero{background:var(--card-shade);color:var(--ink-soft);}
+
 .folder-group{margin-bottom:6px;}
-.folder-header{display:flex;align-items:center;gap:8px;padding:9px 10px;margin-top:10px;border-radius:8px;background:rgba(251,246,234,.06);}
+.folder-header{display:flex;align-items:center;gap:8px;padding:9px 10px;margin-top:10px;border-radius:8px;background:rgba(251,246,234,.06);cursor:pointer;}
+.folder-header:hover{background:rgba(251,246,234,.1);}
 .folder-header .fname{flex:1;font-family:var(--font-mono);font-size:12.5px;letter-spacing:.03em;color:var(--card);min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.folder-header .ficon{opacity:.7;}
+.folder-header .due-badge{font-size:10.5px;padding:3px 8px;}
 .folder-header .fbtn{background:none;border:none;color:rgba(251,246,234,.45);font-size:12px;padding:2px 5px;flex:none;}
 .folder-header .fbtn:hover{color:var(--brass);}
+.folder-header .fbtn.toggle{font-size:10px;opacity:.8;}
 .folder-decks{padding-left:8px;border-left:2px solid rgba(251,246,234,.12);margin:6px 0 6px 10px;}
+.folder-decks.collapsed{display:none;}
 
 .deck-row{
   position:relative;
@@ -103,8 +110,6 @@ main{flex:1;padding:6px 18px calc(24px + var(--safe-bottom)) 18px;overflow-y:aut
 .deck-row .info{flex:1;min-width:0;}
 .deck-row .name{font-family:var(--font-display);font-size:17px;font-weight:600;margin:0 0 2px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .deck-row .meta{font-family:var(--font-mono);font-size:11.5px;color:var(--ink-soft);}
-.deck-row .due-badge{font-family:var(--font-mono);font-size:12px;font-weight:600;background:var(--brass);color:var(--walnut-deep);border-radius:999px;padding:4px 10px;flex:none;}
-.deck-row .due-badge.zero{background:var(--card-shade);color:var(--ink-soft);}
 .deck-row .chevron{color:var(--ink-soft);flex:none;font-size:18px;}
 
 .empty-state{text-align:center;padding:40px 20px;color:rgba(251,246,234,.6);}
@@ -307,6 +312,7 @@ main{flex:1;padding:6px 18px calc(24px + var(--safe-bottom)) 18px;overflow-y:aut
     <div class="topbar">
       <button class="back" id="deckBackBtn" aria-label="Retour">←</button>
       <h1 id="deckTitle">Paquet</h1>
+      <button class="icon-btn" id="deckStatsBtn" aria-label="Statistiques" title="Statistiques">☙</button>
       <button class="stamp-btn" id="deckDeleteBtn">Suppr.</button>
     </div>
     <main>
@@ -381,7 +387,7 @@ main{flex:1;padding:6px 18px calc(24px + var(--safe-bottom)) 18px;overflow-y:aut
   <section id="view-stats" class="hidden">
     <div class="topbar">
       <button class="back" id="statsBackBtn" aria-label="Retour">←</button>
-      <h1>Statistiques</h1>
+      <h1 id="statsTitle">Statistiques</h1>
     </div>
     <main id="statsMain"></main>
   </section>
@@ -503,7 +509,7 @@ main{flex:1;padding:6px 18px calc(24px + var(--safe-bottom)) 18px;overflow-y:aut
     <h3>Réviser</h3>
 
     <div class="field" id="reviewFoldersField">
-      <label>Dossiers à inclure</label>
+      <label id="reviewFoldersLabel">Dossiers à inclure</label>
       <div id="reviewFolderChecks"></div>
     </div>
 
@@ -623,41 +629,86 @@ function deckMasteryPct(deckId){
   return Math.round(arr.reduce((s,c)=>s+masteryPct(c),0) / arr.length);
 }
 
+function folderMasteryPct(deckIds){
+  const arr = deckIds.flatMap(id => cardsForDeck(id));
+  if(arr.length === 0) return null;
+  return Math.round(arr.reduce((s,c)=>s+masteryPct(c),0) / arr.length);
+}
+
 /* ================= stats quotidiennes (pour les graphiques) ================= */
+// dailyStats[date] = { reviews, totalCards, avgMastery, byDeck: { deckId: {reviews, totalCards, avgMastery} } }
+// byDeck permet de reconstituer les mêmes statistiques (assiduité, maîtrise, nombre de termes)
+// mais filtrées sur un seul dossier ou une seule liste.
 function snapshotToday(){
   const t = todayStr();
   const allCards = Object.values(cards);
   const avgMastery = allCards.length ? Math.round(allCards.reduce((s,c)=>s+masteryPct(c),0)/allCards.length) : 0;
-  const existing = dailyStats[t] || { reviews: 0 };
-  dailyStats[t] = { reviews: existing.reviews || 0, totalCards: allCards.length, avgMastery };
+  const entry = dailyStats[t] || { reviews: 0, byDeck: {} };
+  entry.reviews = entry.reviews || 0;
+  entry.totalCards = allCards.length;
+  entry.avgMastery = avgMastery;
+  entry.byDeck = entry.byDeck || {};
+  Object.values(decks).forEach(d => {
+    const arr = cardsForDeck(d.id);
+    const m = arr.length ? Math.round(arr.reduce((s,c)=>s+masteryPct(c),0)/arr.length) : 0;
+    const prevReviews = (entry.byDeck[d.id] && entry.byDeck[d.id].reviews) || 0;
+    entry.byDeck[d.id] = { reviews: prevReviews, totalCards: arr.length, avgMastery: m };
+  });
+  dailyStats[t] = entry;
   persistDaily();
 }
-function recordReview(){
+function recordReview(deckId){
   const t = todayStr();
-  if(!dailyStats[t]) dailyStats[t] = { reviews: 0, totalCards: 0, avgMastery: 0 };
-  dailyStats[t].reviews += 1;
+  if(!dailyStats[t]) dailyStats[t] = { reviews: 0, totalCards: 0, avgMastery: 0, byDeck: {} };
+  if(!dailyStats[t].byDeck) dailyStats[t].byDeck = {};
+  dailyStats[t].reviews = (dailyStats[t].reviews || 0) + 1;
+  if(deckId){
+    if(!dailyStats[t].byDeck[deckId]) dailyStats[t].byDeck[deckId] = { reviews: 0, totalCards: 0, avgMastery: 0 };
+    dailyStats[t].byDeck[deckId].reviews = (dailyStats[t].byDeck[deckId].reviews || 0) + 1;
+  }
   persistDaily();
   snapshotToday();
 }
-function lastNDaysSeries(n){
+// deckIds omis -> portée globale ; sinon, série reconstituée sur uniquement ces paquets.
+function lastNDaysSeries(n, deckIds){
   const out = [];
   let lastMastery = 0, lastCount = 0;
   for(let i = n-1; i >= 0; i--){
     const key = dateKeyMinus(i);
     const entry = dailyStats[key];
+    let reviews = 0, totalCards = lastCount, avgMastery = lastMastery;
     if(entry){
-      if(entry.totalCards !== undefined) lastCount = entry.totalCards;
-      if(entry.avgMastery !== undefined) lastMastery = entry.avgMastery;
+      if(!deckIds){
+        reviews = entry.reviews || 0;
+        if(entry.totalCards !== undefined) totalCards = entry.totalCards;
+        if(entry.avgMastery !== undefined) avgMastery = entry.avgMastery;
+      } else {
+        const sub = deckIds.map(id => (entry.byDeck && entry.byDeck[id]) || null).filter(Boolean);
+        reviews = deckIds.reduce((s,id)=> s + ((entry.byDeck && entry.byDeck[id] && entry.byDeck[id].reviews) || 0), 0);
+        if(sub.length){
+          totalCards = sub.reduce((s,e)=>s+(e.totalCards||0),0);
+          const withCards = sub.filter(e=>e.totalCards>0);
+          const cardSum = withCards.reduce((s,e)=>s+e.totalCards,0);
+          avgMastery = cardSum ? Math.round(withCards.reduce((s,e)=>s+e.avgMastery*e.totalCards,0) / cardSum) : lastMastery;
+        }
+      }
     }
-    out.push({ date:key, reviews: (entry && entry.reviews) || 0, totalCards: lastCount, avgMastery: lastMastery });
+    lastCount = totalCards; lastMastery = avgMastery;
+    out.push({ date:key, reviews, totalCards, avgMastery });
   }
   return out;
 }
-function computeStreak(){
+function computeStreak(deckIds){
+  const reviewsOn = (key) => {
+    const e = dailyStats[key];
+    if(!e) return 0;
+    if(!deckIds) return e.reviews || 0;
+    return deckIds.reduce((s,id)=> s + ((e.byDeck && e.byDeck[id] && e.byDeck[id].reviews) || 0), 0);
+  };
   let streak = 0;
-  const startOffset = dailyStats[todayStr()] && dailyStats[todayStr()].reviews > 0 ? 0 : 1;
+  const startOffset = reviewsOn(todayStr()) > 0 ? 0 : 1;
   let i = startOffset;
-  while(dailyStats[dateKeyMinus(i)] && dailyStats[dateKeyMinus(i)].reviews > 0){ streak++; i++; }
+  while(reviewsOn(dateKeyMinus(i)) > 0){ streak++; i++; }
   return streak;
 }
 
@@ -741,6 +792,13 @@ function getFolderBuckets(){
   });
   return buckets;
 }
+// scope: null (tout) | {type:'folder', id} | {type:'deck', id}
+function scopeDeckIds(scope){
+  if(!scope) return Object.keys(decks);
+  if(scope.type === 'folder') return decksInFolder(scope.id).map(d=>d.id);
+  if(scope.type === 'deck') return [scope.id];
+  return Object.keys(decks);
+}
 
 /* ================= rendu : accueil ================= */
 function renderHome(){
@@ -767,24 +825,46 @@ function renderHome(){
 
   buckets.forEach(bucket => {
     if(bucket.deckIds.length === 0 && bucket.id === null) return;
+    if(bucket.id === null){
+      // paquets sans dossier : affichés directement, sans bandeau au-dessus
+      bucket.deckIds
+        .map(id => decks[id])
+        .sort((a,b)=>a.createdAt-b.createdAt)
+        .forEach(deck => list.appendChild(renderDeckRow(deck)));
+      return;
+    }
     const group = document.createElement('div');
     group.className = 'folder-group';
     const header = document.createElement('div');
     header.className = 'folder-header';
+    const collapsed = !!(bucket.id && folders[bucket.id] && folders[bucket.id].collapsed);
     header.innerHTML = `
-      <span class="ficon">${bucket.id ? '☞' : '·'}</span>
+      <button class="fbtn toggle" data-act="toggle" aria-label="Réduire / développer">${collapsed ? '▸' : '▾'}</button>
       <span class="fname">${escapeHTML(bucket.name)}</span>
       <span class="due-badge ${bucket.due===0?'zero':''}">${bucket.due}</span>
-      ${bucket.id ? '<button class="fbtn" data-act="rename">✎</button><button class="fbtn" data-act="del">✕</button>' : ''}
+      ${bucket.id ? '<button class="fbtn" data-act="stats" title="Statistiques">☙</button><button class="fbtn" data-act="rename" title="Renommer">✎</button><button class="fbtn" data-act="del" title="Supprimer">✕</button>' : ''}
     `;
+    const decksWrap = document.createElement('div');
+    decksWrap.className = 'folder-decks' + (collapsed ? ' collapsed' : '');
     if(bucket.id){
+      header.querySelector('[data-act="toggle"]').addEventListener('click', (e) => {
+        e.stopPropagation();
+        const f = folders[bucket.id];
+        f.collapsed = !f.collapsed;
+        persistFolders();
+        decksWrap.classList.toggle('collapsed', f.collapsed);
+        header.querySelector('[data-act="toggle"]').textContent = f.collapsed ? '▸' : '▾';
+      });
+      header.querySelector('[data-act="stats"]').addEventListener('click', (e) => { e.stopPropagation(); openStats({type:'folder', id: bucket.id}, {view:'home'}); });
       header.querySelector('[data-act="rename"]').addEventListener('click', (e)=>{ e.stopPropagation(); renameFolder(bucket.id); });
       header.querySelector('[data-act="del"]').addEventListener('click', (e)=>{ e.stopPropagation(); deleteFolder(bucket.id); });
+      header.addEventListener('click', () => {
+        if(bucket.total === 0) return;
+        openReviewModal('folder', bucket.id);
+      });
     }
     group.appendChild(header);
 
-    const decksWrap = document.createElement('div');
-    decksWrap.className = 'folder-decks';
     bucket.deckIds
       .map(id => decks[id])
       .sort((a,b)=>a.createdAt-b.createdAt)
@@ -996,9 +1076,10 @@ function renderStudyCard(){
 
 function gradeCurrentCard(quality){
   const item = studyQueue[studyIndex];
+  const deckIdOfCard = cards[item.cardId].deckId;
   cards[item.cardId] = scheduleCard(cards[item.cardId], quality);
   persistCards();
-  recordReview();
+  recordReview(deckIdOfCard);
   if(quality < 3){
     // Correctif principal (voir commentaire sur scheduleCard) : la carte revient plus loin dans
     // LA MÊME session au lieu de disparaître jusqu'à demain.
@@ -1068,6 +1149,7 @@ document.getElementById('gradeRow').addEventListener('click', (e) => {
 
 document.addEventListener('keydown', (e) => {
   if(views.study.classList.contains('hidden')) return;
+  if(document.activeElement && ['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName)) return;
   if(e.code === 'Space'){
     e.preventDefault();
     if(!cardRevealed) flipEl.click();
@@ -1095,36 +1177,55 @@ document.getElementById('studyEditBtn').addEventListener('click', () => {
 
 /* ================= modale : paramètres de révision ================= */
 const modalReview = document.getElementById('modalReview');
-let reviewMode = null; // 'home' | 'deck'
+let reviewMode = null; // 'home' | 'deck' | 'folder'
+let reviewScopeId = null; // id du dossier, quand mode === 'folder'
 let reviewFolderSelection = new Set();
 
-function openReviewModal(mode){
+function buildCheckRow(key, name, due){
+  const row = document.createElement('label');
+  row.className = 'check-opt';
+  row.innerHTML = `
+    <input type="checkbox" checked data-key="${key}">
+    <span class="cname">${escapeHTML(name)}</span>
+    <span class="cdue">${due} due</span>
+  `;
+  row.querySelector('input').addEventListener('change', (e) => {
+    if(e.target.checked) reviewFolderSelection.add(key);
+    else reviewFolderSelection.delete(key);
+  });
+  return row;
+}
+
+function openReviewModal(mode, scopeId){
   reviewMode = mode;
+  reviewScopeId = scopeId || null;
   const foldersField = document.getElementById('reviewFoldersField');
-  foldersField.classList.toggle('hidden', mode !== 'home');
+  const foldersLabel = document.getElementById('reviewFoldersLabel');
+  foldersField.classList.toggle('hidden', mode === 'deck');
+  reviewFolderSelection = new Set();
 
   let dueForScope = 0;
+  const wrap = document.getElementById('reviewFolderChecks');
+  wrap.innerHTML = '';
+
   if(mode === 'home'){
+    foldersLabel.textContent = 'Dossiers à inclure';
     const buckets = getFolderBuckets().filter(b => b.total > 0);
     reviewFolderSelection = new Set(buckets.map(b => b.id === null ? 'none' : b.id));
     dueForScope = allDueCards().length;
-    const wrap = document.getElementById('reviewFolderChecks');
-    wrap.innerHTML = '';
     buckets.forEach(b => {
       const key = b.id === null ? 'none' : b.id;
-      const row = document.createElement('label');
-      row.className = 'check-opt';
-      row.innerHTML = `
-        <input type="checkbox" checked data-key="${key}">
-        <span class="cname">${escapeHTML(b.name)}</span>
-        <span class="cdue">${b.due} due</span>
-      `;
-      row.querySelector('input').addEventListener('change', (e) => {
-        if(e.target.checked) reviewFolderSelection.add(key);
-        else reviewFolderSelection.delete(key);
-      });
-      wrap.appendChild(row);
+      wrap.appendChild(buildCheckRow(key, b.name, b.due));
     });
+  } else if(mode === 'folder'){
+    foldersLabel.textContent = 'Listes à inclure';
+    const deckIds = decksInFolder(scopeId).map(d=>d.id);
+    reviewFolderSelection = new Set(deckIds);
+    dueForScope = deckIds.reduce((s,id)=>s+dueCardsForDeck(id).length,0);
+    deckIds
+      .map(id=>decks[id])
+      .sort((a,b)=>a.createdAt-b.createdAt)
+      .forEach(d => wrap.appendChild(buildCheckRow(d.id, d.name, dueCardsForDeck(d.id).length)));
   } else {
     dueForScope = dueCardsForDeck(currentDeckId).length;
   }
@@ -1156,6 +1257,11 @@ document.getElementById('startReviewBtn').addEventListener('click', () => {
     ids = cardIdsForScope([currentDeckId], force);
     label = decks[currentDeckId].name;
     scopeDeckId = currentDeckId;
+  } else if(reviewMode === 'folder'){
+    const deckIds = Array.from(reviewFolderSelection);
+    ids = cardIdsForScope(deckIds, force);
+    label = (folders[reviewScopeId] && folders[reviewScopeId].name) || 'Révision';
+    scopeDeckId = null;
   } else {
     const buckets = getFolderBuckets();
     let deckIds = [];
@@ -1182,8 +1288,18 @@ document.getElementById('deckStudyBtn').addEventListener('click', () => {
   if(cardsForDeck(currentDeckId).length === 0) return;
   openReviewModal('deck');
 });
-document.getElementById('openStatsBtn').addEventListener('click', () => { renderStats(); showView('stats'); });
-document.getElementById('statsBackBtn').addEventListener('click', () => { showView('home'); renderHome(); });
+let statsReturn = { view: 'home' };
+function openStats(scope, ret){
+  statsReturn = ret || { view: 'home' };
+  renderStatsFor(scope);
+  showView('stats');
+}
+document.getElementById('openStatsBtn').addEventListener('click', () => openStats(null, { view: 'home' }));
+document.getElementById('deckStatsBtn').addEventListener('click', () => openStats({type:'deck', id: currentDeckId}, { view: 'deck' }));
+document.getElementById('statsBackBtn').addEventListener('click', () => {
+  showView(statsReturn.view);
+  if(statsReturn.view === 'deck') renderDeck(); else renderHome();
+});
 
 /* ================= modale : menu + ================= */
 const modalFabMenu = document.getElementById('modalFabMenu');
@@ -1398,28 +1514,76 @@ function buildBarChartSVG(points){
   return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" style="width:100%;height:90px;display:block;">${bars}</svg>`;
 }
 
-function renderStats(){
+// scope: null (toute la collection) | {type:'folder', id} | {type:'deck', id}
+// Les mêmes indicateurs (assiduité, nombre de termes, évolution de la maîtrise, ...) sont
+// recalculés en ne tenant compte que des paquets de la portée choisie.
+function renderStatsFor(scope){
   snapshotToday();
-  const series = lastNDaysSeries(30);
-  const totalCardsCount = Object.keys(cards).length;
-  const totalDecks = Object.keys(decks).length;
-  const dueToday = allDueCards().length;
-  const reviewsToday = (dailyStats[todayStr()] && dailyStats[todayStr()].reviews) || 0;
-  const streak = computeStreak();
-  const masteredCount = Object.values(cards).filter(c => masteryPct(c) >= 80).length;
+  const deckIds = scope ? scopeDeckIds(scope) : null;
+  const series = lastNDaysSeries(30, deckIds);
+  const cardsInScope = deckIds ? deckIds.flatMap(id => cardsForDeck(id)) : Object.values(cards);
 
-  const deckRows = Object.values(decks).map(d => {
-    const total = cardsForDeck(d.id).length;
-    const due = dueCardsForDeck(d.id).length;
-    const m = deckMasteryPct(d.id);
-    return { name: d.name, total, due, mastery: m };
-  }).sort((a,b)=> b.total - a.total);
+  const totalCardsCount = cardsInScope.length;
+  const totalDecks = deckIds ? deckIds.length : Object.keys(decks).length;
+  const dueToday = deckIds ? deckIds.reduce((s,id)=>s+dueCardsForDeck(id).length,0) : allDueCards().length;
+  const todayEntry = dailyStats[todayStr()];
+  const reviewsToday = deckIds
+    ? deckIds.reduce((s,id)=> s + ((todayEntry && todayEntry.byDeck && todayEntry.byDeck[id] && todayEntry.byDeck[id].reviews) || 0), 0)
+    : ((todayEntry && todayEntry.reviews) || 0);
+  const streak = computeStreak(deckIds);
+  const masteredCount = cardsInScope.filter(c => masteryPct(c) >= 80).length;
 
+  let title = 'Statistiques';
+  let breakdownHTML = '';
+
+  if(!scope){
+    const folderRows = getFolderBuckets().map(b => ({ name: b.name, total: b.total, due: b.due, mastery: folderMasteryPct(b.deckIds) }));
+    const deckRows = Object.values(decks).map(d => ({
+      name: d.name, total: cardsForDeck(d.id).length, due: dueCardsForDeck(d.id).length, mastery: deckMasteryPct(d.id)
+    })).sort((a,b)=> b.total - a.total);
+    breakdownHTML = `
+      <div class="section-label">Par dossier</div>
+      <table class="stats-table">
+        <thead><tr><th>Dossier</th><th>Total</th><th>Dues</th><th>Maîtrise</th></tr></thead>
+        <tbody>
+          ${folderRows.map(r => `<tr><td>${escapeHTML(r.name)}</td><td>${r.total}</td><td>${r.due}</td><td>${r.mastery===null?'—':r.mastery+'%'}</td></tr>`).join('') || '<tr><td colspan="4">Aucun dossier.</td></tr>'}
+        </tbody>
+      </table>
+      <div class="section-label">Par paquet</div>
+      <table class="stats-table">
+        <thead><tr><th>Paquet</th><th>Total</th><th>Dues</th><th>Maîtrise</th></tr></thead>
+        <tbody>
+          ${deckRows.map(r => `<tr><td>${escapeHTML(r.name)}</td><td>${r.total}</td><td>${r.due}</td><td>${r.mastery===null?'—':r.mastery+'%'}</td></tr>`).join('') || '<tr><td colspan="4">Aucun paquet.</td></tr>'}
+        </tbody>
+      </table>
+    `;
+  } else if(scope.type === 'folder'){
+    const f = folders[scope.id];
+    title = f ? f.name : 'Dossier';
+    const deckRows = deckIds.map(id => decks[id]).filter(Boolean).map(d => ({
+      name: d.name, total: cardsForDeck(d.id).length, due: dueCardsForDeck(d.id).length, mastery: deckMasteryPct(d.id)
+    })).sort((a,b)=> b.total - a.total);
+    breakdownHTML = `
+      <div class="section-label">Paquets du dossier</div>
+      <table class="stats-table">
+        <thead><tr><th>Paquet</th><th>Total</th><th>Dues</th><th>Maîtrise</th></tr></thead>
+        <tbody>
+          ${deckRows.map(r => `<tr><td>${escapeHTML(r.name)}</td><td>${r.total}</td><td>${r.due}</td><td>${r.mastery===null?'—':r.mastery+'%'}</td></tr>`).join('') || '<tr><td colspan="4">Aucun paquet.</td></tr>'}
+        </tbody>
+      </table>
+    `;
+  } else if(scope.type === 'deck'){
+    const d = decks[scope.id];
+    title = d ? d.name : 'Paquet';
+  }
+
+  document.getElementById('statsTitle').textContent = title;
+  const lastPoint = series[series.length-1];
   const main = document.getElementById('statsMain');
   main.innerHTML = `
     <div class="stats-grid">
       <div class="stat-tile"><div class="val">${totalCardsCount}</div><div class="lbl">Termes au total</div></div>
-      <div class="stat-tile"><div class="val">${totalDecks}</div><div class="lbl">Paquets</div></div>
+      <div class="stat-tile"><div class="val">${totalDecks}</div><div class="lbl">Paquet${totalDecks>1?'s':''}</div></div>
       <div class="stat-tile"><div class="val">${dueToday}</div><div class="lbl">Dues aujourd'hui</div></div>
       <div class="stat-tile"><div class="val">${reviewsToday}</div><div class="lbl">Révisées aujourd'hui</div></div>
       <div class="stat-tile"><div class="val">${streak} j</div><div class="lbl">Série en cours</div></div>
@@ -1432,21 +1596,16 @@ function renderStats(){
     </div>
 
     <div class="chart-card">
-      <h4><span>Maîtrise globale</span><span>${series[series.length-1].avgMastery}%</span></h4>
+      <h4><span>Maîtrise${scope ? '' : ' globale'}</span><span>${lastPoint.avgMastery}%</span></h4>
       ${buildLineChartSVG(series.map(s=>({value:s.avgMastery})), {min:0, max:100})}
     </div>
 
     <div class="chart-card">
-      <h4><span>Nombre de termes</span><span>${series[series.length-1].totalCards}</span></h4>
+      <h4><span>Nombre de termes</span><span>${lastPoint.totalCards}</span></h4>
       ${buildLineChartSVG(series.map(s=>({value:s.totalCards})))}
     </div>
 
-    <table class="stats-table">
-      <thead><tr><th>Paquet</th><th>Total</th><th>Dues</th><th>Maîtrise</th></tr></thead>
-      <tbody>
-        ${deckRows.map(r => `<tr><td>${escapeHTML(r.name)}</td><td>${r.total}</td><td>${r.due}</td><td>${r.mastery===null?'—':r.mastery+'%'}</td></tr>`).join('') || '<tr><td colspan="4">Aucun paquet.</td></tr>'}
-      </tbody>
-    </table>
+    ${breakdownHTML}
   `;
 }
 
