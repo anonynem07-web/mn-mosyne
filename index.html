@@ -95,9 +95,21 @@ main{flex:1;padding:6px 18px calc(24px + var(--safe-bottom)) 18px;overflow-y:aut
 .folder-header .due-badge{font-size:10.5px;padding:3px 8px;}
 .folder-header .fbtn{background:none;border:none;color:rgba(251,246,234,.45);font-size:12px;padding:2px 5px;flex:none;}
 .folder-header .fbtn:hover{color:var(--brass);}
-.folder-header .fbtn.toggle{font-size:10px;opacity:.8;}
+.folder-header .fbtn.toggle{font-size:19px;padding:4px 12px 4px 2px;opacity:.95;line-height:1;}
 .folder-decks{padding-left:8px;border-left:2px solid rgba(251,246,234,.12);margin:6px 0 6px 10px;}
 .folder-decks.collapsed{display:none;}
+.order-controls{display:flex;flex-direction:column;flex:none;}
+.order-btn{background:none;border:none;color:rgba(251,246,234,.4);font-size:11px;line-height:1;padding:4px 6px;}
+.order-btn:hover{color:var(--brass);}
+.deck-row .order-btn{color:rgba(42,36,32,.35);}
+.deck-row .order-btn:hover{color:var(--brass-deep);}
+
+.topbar .star-btn{background:none;border:none;color:var(--card);font-family:var(--font-display);font-size:22px;font-weight:600;padding:0;line-height:1;flex:none;opacity:.9;}
+.topbar .star-btn:hover{opacity:1;color:var(--brass);}
+
+.modal-backdrop.centered{align-items:center;padding:24px;}
+.modal-backdrop.centered .modal{border-radius:16px;border-top:1px solid var(--brass);max-height:80vh;}
+.note-text{white-space:pre-wrap;font-family:var(--font-display);font-size:15.5px;line-height:1.8;text-align:center;max-height:52vh;overflow-y:auto;padding:4px 6px;margin-bottom:14px;}
 
 .deck-row{
   position:relative;
@@ -111,6 +123,7 @@ main{flex:1;padding:6px 18px calc(24px + var(--safe-bottom)) 18px;overflow-y:aut
 .deck-row .name{font-family:var(--font-display);font-size:17px;font-weight:600;margin:0 0 2px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .deck-row .meta{font-family:var(--font-mono);font-size:11.5px;color:var(--ink-soft);}
 .deck-row .chevron{color:var(--ink-soft);flex:none;font-size:18px;}
+.deck-row .right-controls{display:flex;align-items:center;gap:2px;flex:none;}
 
 .empty-state{text-align:center;padding:40px 20px;color:rgba(251,246,234,.6);}
 .empty-state p{font-size:14.5px;line-height:1.6;margin:0;}
@@ -285,7 +298,8 @@ main{flex:1;padding:6px 18px calc(24px + var(--safe-bottom)) 18px;overflow-y:aut
   <!-- ===== HOME ===== -->
   <section id="view-home">
     <div class="topbar">
-      <h1>✦ en route vers l'ENS</h1>
+      <button class="star-btn" id="starBtn" aria-label="Note">✦</button>
+      <h1 id="homeTitle"></h1>
       <button class="icon-btn" id="openStatsBtn" aria-label="Statistiques" title="Statistiques">☙</button>
     </div>
     <main>
@@ -312,6 +326,7 @@ main{flex:1;padding:6px 18px calc(24px + var(--safe-bottom)) 18px;overflow-y:aut
     <div class="topbar">
       <button class="back" id="deckBackBtn" aria-label="Retour">←</button>
       <h1 id="deckTitle">Paquet</h1>
+      <button class="icon-btn" id="deckRenameBtn" aria-label="Renommer" title="Renommer">✎</button>
       <button class="icon-btn" id="deckStatsBtn" aria-label="Statistiques" title="Statistiques">☙</button>
       <button class="stamp-btn" id="deckDeleteBtn">Suppr.</button>
     </div>
@@ -432,6 +447,10 @@ main{flex:1;padding:6px 18px calc(24px + var(--safe-bottom)) 18px;overflow-y:aut
       <label for="newFolderName">Nom</label>
       <input type="text" id="newFolderName" placeholder="Ex. Langues">
     </div>
+    <div class="field">
+      <label for="newFolderParent">Dossier parent (optionnel)</label>
+      <select id="newFolderParent"></select>
+    </div>
     <div class="modal-actions">
       <button class="btn" id="cancelFolder">Annuler</button>
       <button class="btn primary" id="saveFolder">Créer</button>
@@ -535,6 +554,22 @@ main{flex:1;padding:6px 18px calc(24px + var(--safe-bottom)) 18px;overflow-y:aut
   </div>
 </div>
 
+<!-- ===== MODAL: note derrière l'étoile ===== -->
+<div class="modal-backdrop hidden centered" id="modalNote">
+  <div class="modal">
+    <h3>✦</h3>
+    <div class="note-text hidden" id="noteDisplay"></div>
+    <div class="field hidden" id="noteEditWrap">
+      <textarea id="noteInput" rows="16" placeholder="Écrivez votre texte ici…"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" id="closeNote">Fermer</button>
+      <button class="btn primary" id="editNoteBtn">Modifier</button>
+      <button class="btn primary hidden" id="saveNoteBtn">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -591,18 +626,36 @@ function formatIntervalPreview(days){
   return Math.round(days/365) + ' an' + (Math.round(days/365)>1?'s':'');
 }
 
+function daysBetween(a, b){ // b - a en jours (chaînes 'YYYY-MM-DD'); positif si b est après a
+  return Math.round((new Date(b) - new Date(a)) / 86400000);
+}
+
 /* ================= SM-2 =================*/
 /* ================= SM-2 =================*/
+// Correctif : pénalité proportionnelle en cas de révision anticipée. Réviser un terme 2 jours
+// après l'avoir vu la dernière fois est plus facile (donc moins probant) que le réviser une
+// semaine après : sans ce correctif, l'algorithme récompenserait autant les deux, et les
+// intervalles grossiraient artificiellement vite en cas de révisions répétées en avance.
+const EARLY_PENALTY_MAX = 0.35; // jusqu'à -35% d'intervalle si révisée dès le lendemain de la précédente révision
 function scheduleCard(card, quality){
   const next = { ...card };
+  const today = todayStr();
   if(quality < 3){
     next.repetition = 0;
     next.interval = 0;
-    next.due = todayStr();
+    next.due = today;
   } else {
-    if(next.repetition === 0) next.interval = 1;
-    else if(next.repetition === 1) next.interval = 6;
-    else next.interval = Math.round(next.interval * next.ease);
+    let base;
+    if(next.repetition === 0) base = 1;
+    else if(next.repetition === 1) base = 6;
+    else base = next.interval * next.ease;
+
+    if(card.due && card.due > today && card.interval > 0){
+      const earlyDays = Math.max(0, daysBetween(today, card.due));
+      const earlyRatio = Math.min(1, earlyDays / card.interval);
+      base = base * (1 - EARLY_PENALTY_MAX * earlyRatio);
+    }
+    next.interval = Math.max(1, Math.round(base));
     next.repetition = (next.repetition || 0) + 1;
     next.due = addDaysStr(next.interval);
   }
@@ -612,14 +665,13 @@ function scheduleCard(card, quality){
 function previewInterval(card, quality){
   return quality < 3 ? null : scheduleCard(card, quality).interval;
 }
-const REQUEUE_GAP = 3; // combien de cartes plus loin une "NA" resurgit dans la session en cours
 
 /* ================= maîtrise ================= */
 // Simplification assumée : une carte est considérée "pleinement maîtrisée" (100%) à partir d'un
 // intervalle de 21 jours (seuil classique de carte "mature"), et 0% pour une carte neuve.
 // C'est un indicateur relatif, pas une vraie probabilité de rétention (il faudrait un modèle
 // type FSRS pour ça) — mais il donne une tendance fiable et cohérente dans le temps.
-const MASTERY_CAP_DAYS = 21;
+const MASTERY_CAP_DAYS = 13;
 function masteryPct(card){
   return Math.max(0, Math.min(100, Math.round((card.interval||0) / MASTERY_CAP_DAYS * 100)));
 }
@@ -777,10 +829,52 @@ function decksInFolder(folderId){
 function allDueCards(){
   return Object.values(cards).filter(isDue);
 }
+// Tri générique par champ "order" (réorganisation manuelle), avec repli sur createdAt
+// pour les éléments qui n'ont pas encore de valeur "order" (créés avant cette fonctionnalité).
+function sortByOrder(arr){
+  return arr.slice().sort((a,b) => (a.order !== undefined ? a.order : a.createdAt) - (b.order !== undefined ? b.order : b.createdAt));
+}
+function moveItem(arr, id, dir){
+  const idx = arr.findIndex(x => x.id === id);
+  const swapIdx = idx + dir;
+  if(idx < 0 || swapIdx < 0 || swapIdx >= arr.length) return false;
+  const a = arr[idx], b = arr[swapIdx];
+  const ao = a.order !== undefined ? a.order : a.createdAt;
+  const bo = b.order !== undefined ? b.order : b.createdAt;
+  a.order = bo; b.order = ao;
+  return true;
+}
+function moveFolder(folderId, dir){
+  const f = folders[folderId];
+  if(!f) return;
+  const siblings = sortByOrder(childFolders(f.parentId || null));
+  if(moveItem(siblings, folderId, dir)){ persistFolders(); renderHome(); }
+}
+function moveDeck(deckId, dir){
+  const deck = decks[deckId];
+  if(!deck) return;
+  const siblings = sortByOrder(Object.values(decks).filter(d => (d.folderId||null) === (deck.folderId||null)));
+  if(moveItem(siblings, deckId, dir)){ persistDecks(); renderHome(); }
+}
+// ---- sous-dossiers ----
+function childFolders(parentId){
+  return Object.values(folders).filter(f => (f.parentId || null) === (parentId || null));
+}
+function descendantFolderIds(folderId){
+  let ids = [folderId];
+  childFolders(folderId).forEach(f => { ids = ids.concat(descendantFolderIds(f.id)); });
+  return ids;
+}
+// paquets d'un dossier ET de tous ses sous-dossiers (utilisé pour compter/réviser/statistiquer
+// un dossier en tenant compte de toute son arborescence)
+function deckIdsInFolderTree(folderId){
+  return descendantFolderIds(folderId).flatMap(fid => decksInFolder(fid).map(d=>d.id));
+}
 function getFolderBuckets(){
-  const buckets = Object.values(folders).sort((a,b)=>a.createdAt-b.createdAt).map(f => ({
+  const topFolders = sortByOrder(Object.values(folders).filter(f => !f.parentId));
+  const buckets = topFolders.map(f => ({
     id: f.id, name: f.name,
-    deckIds: decksInFolder(f.id).map(d=>d.id),
+    deckIds: deckIdsInFolderTree(f.id),
   }));
   const orphanDecks = decksInFolder(null);
   if(orphanDecks.length > 0){
@@ -795,16 +889,18 @@ function getFolderBuckets(){
 // scope: null (tout) | {type:'folder', id} | {type:'deck', id}
 function scopeDeckIds(scope){
   if(!scope) return Object.keys(decks);
-  if(scope.type === 'folder') return decksInFolder(scope.id).map(d=>d.id);
+  if(scope.type === 'folder') return deckIdsInFolderTree(scope.id);
   if(scope.type === 'deck') return [scope.id];
   return Object.keys(decks);
 }
 
 /* ================= rendu : accueil ================= */
+/* ================= rendu : accueil ================= */
 function renderHome(){
   const todayLabel = document.getElementById('todayLabel');
   const now = new Date();
   todayLabel.textContent = now.toLocaleDateString('fr-CH', { weekday:'long', day:'numeric', month:'long' });
+  document.getElementById('homeTitle').textContent = saintOfDay();
 
   const totalDue = allDueCards().length;
   const totalCardsCount = Object.keys(cards).length;
@@ -816,63 +912,61 @@ function renderHome(){
 
   const list = document.getElementById('deckList');
   list.innerHTML = '';
-  const deckArr = Object.values(decks);
-  document.getElementById('homeEmpty').classList.toggle('hidden', deckArr.length > 0);
+  document.getElementById('homeEmpty').classList.toggle('hidden', Object.keys(decks).length > 0 || Object.keys(folders).length > 0);
 
-  const buckets = getFolderBuckets();
-  const bucketedDeckIds = new Set(buckets.flatMap(b => b.deckIds));
-  const looseDecks = deckArr.filter(d => !bucketedDeckIds.has(d.id));
+  renderFolderTree(null, list);
+  sortByOrder(decksInFolder(null)).forEach(deck => list.appendChild(renderDeckRow(deck)));
+}
 
-  buckets.forEach(bucket => {
-    if(bucket.deckIds.length === 0 && bucket.id === null) return;
-    if(bucket.id === null){
-      // paquets sans dossier : affichés directement, sans bandeau au-dessus
-      bucket.deckIds
-        .map(id => decks[id])
-        .sort((a,b)=>a.createdAt-b.createdAt)
-        .forEach(deck => list.appendChild(renderDeckRow(deck)));
-      return;
-    }
+// Rend récursivement les sous-dossiers de "parentId" (null = dossiers de premier niveau) dans "container".
+function renderFolderTree(parentId, container){
+  sortByOrder(childFolders(parentId)).forEach(folder => {
+    const treeDeckIds = deckIdsInFolderTree(folder.id);
+    const due = treeDeckIds.reduce((s,id)=> s + dueCardsForDeck(id).length, 0);
+    const total = treeDeckIds.reduce((s,id)=> s + cardsForDeck(id).length, 0);
+
     const group = document.createElement('div');
     group.className = 'folder-group';
     const header = document.createElement('div');
     header.className = 'folder-header';
-    const collapsed = !!(bucket.id && folders[bucket.id] && folders[bucket.id].collapsed);
+    const collapsed = !!folder.collapsed;
     header.innerHTML = `
-      <button class="fbtn toggle" data-act="toggle" aria-label="Réduire / développer">${collapsed ? '▸' : '▾'}</button>
-      <span class="fname">${escapeHTML(bucket.name)}</span>
-      <span class="due-badge ${bucket.due===0?'zero':''}">${bucket.due}</span>
-      ${bucket.id ? '<button class="fbtn" data-act="stats" title="Statistiques">☙</button><button class="fbtn" data-act="rename" title="Renommer">✎</button><button class="fbtn" data-act="del" title="Supprimer">✕</button>' : ''}
+      <button class="fbtn toggle" data-act="toggle" aria-label="Réduire / développer">${collapsed ? '☞' : '☟'}</button>
+      <span class="fname">${escapeHTML(folder.name)}</span>
+      <span class="due-badge ${due===0?'zero':''}">${due}</span>
+      <button class="fbtn" data-act="stats" title="Statistiques">☙</button>
+      <button class="fbtn" data-act="rename" title="Renommer">✎</button>
+      <button class="fbtn" data-act="up" title="Monter">◭</button>
+      <button class="fbtn" data-act="down" title="Descendre">⧩</button>
+      <button class="fbtn" data-act="del" title="Supprimer">✕</button>
     `;
-    const decksWrap = document.createElement('div');
-    decksWrap.className = 'folder-decks' + (collapsed ? ' collapsed' : '');
-    if(bucket.id){
-      header.querySelector('[data-act="toggle"]').addEventListener('click', (e) => {
-        e.stopPropagation();
-        const f = folders[bucket.id];
-        f.collapsed = !f.collapsed;
-        persistFolders();
-        decksWrap.classList.toggle('collapsed', f.collapsed);
-        header.querySelector('[data-act="toggle"]').textContent = f.collapsed ? '▸' : '▾';
-      });
-      header.querySelector('[data-act="stats"]').addEventListener('click', (e) => { e.stopPropagation(); openStats({type:'folder', id: bucket.id}, {view:'home'}); });
-      header.querySelector('[data-act="rename"]').addEventListener('click', (e)=>{ e.stopPropagation(); renameFolder(bucket.id); });
-      header.querySelector('[data-act="del"]').addEventListener('click', (e)=>{ e.stopPropagation(); deleteFolder(bucket.id); });
-      header.addEventListener('click', () => {
-        if(bucket.total === 0) return;
-        openReviewModal('folder', bucket.id);
-      });
-    }
+    const body = document.createElement('div');
+    body.className = 'folder-decks' + (collapsed ? ' collapsed' : '');
+
+    header.querySelector('[data-act="toggle"]').addEventListener('click', (e) => {
+      e.stopPropagation();
+      folder.collapsed = !folder.collapsed;
+      persistFolders();
+      body.classList.toggle('collapsed', folder.collapsed);
+      header.querySelector('[data-act="toggle"]').textContent = folder.collapsed ? '☞' : '☟';
+    });
+    header.querySelector('[data-act="stats"]').addEventListener('click', (e) => { e.stopPropagation(); openStats({type:'folder', id: folder.id}, {view:'home'}); });
+    header.querySelector('[data-act="rename"]').addEventListener('click', (e)=>{ e.stopPropagation(); renameFolder(folder.id); });
+    header.querySelector('[data-act="up"]').addEventListener('click', (e)=>{ e.stopPropagation(); moveFolder(folder.id, -1); });
+    header.querySelector('[data-act="down"]').addEventListener('click', (e)=>{ e.stopPropagation(); moveFolder(folder.id, 1); });
+    header.querySelector('[data-act="del"]').addEventListener('click', (e)=>{ e.stopPropagation(); deleteFolder(folder.id); });
+    header.addEventListener('click', () => {
+      if(total === 0) return;
+      openReviewModal('folder', folder.id);
+    });
     group.appendChild(header);
 
-    bucket.deckIds
-      .map(id => decks[id])
-      .sort((a,b)=>a.createdAt-b.createdAt)
-      .forEach(deck => decksWrap.appendChild(renderDeckRow(deck)));
-    group.appendChild(decksWrap);
-    list.appendChild(group);
+    renderFolderTree(folder.id, body); // sous-dossiers d'abord
+    sortByOrder(decksInFolder(folder.id)).forEach(deck => body.appendChild(renderDeckRow(deck)));
+
+    group.appendChild(body);
+    container.appendChild(group);
   });
-  looseDecks.forEach(deck => list.appendChild(renderDeckRow(deck)));
 }
 
 function renderDeckRow(deck){
@@ -887,8 +981,15 @@ function renderDeckRow(deck){
       <p class="meta">${total} carte${total>1?'s':''}${mastery!==null ? ' · ' + mastery + '% maîtrisé' : ''}</p>
     </div>
     <span class="due-badge ${due===0?'zero':''}">${due}</span>
-    <span class="chevron">›</span>
+    <div class="right-controls">
+      <div class="order-controls">
+        <button class="order-btn" data-act="up" title="Monter">◭</button>
+        <button class="order-btn" data-act="down" title="Descendre">⧩</button>
+      </div>
+    </div>
   `;
+  row.querySelector('[data-act="up"]').addEventListener('click', (e) => { e.stopPropagation(); moveDeck(deck.id, -1); });
+  row.querySelector('[data-act="down"]').addEventListener('click', (e) => { e.stopPropagation(); moveDeck(deck.id, 1); });
   row.addEventListener('click', () => openDeck(deck.id));
   return row;
 }
@@ -902,13 +1003,34 @@ function openDeck(deckId){
 
 function populateFolderSelect(selectEl, selectedId){
   selectEl.innerHTML = '<option value="">Sans dossier</option>';
-  Object.values(folders).sort((a,b)=>a.createdAt-b.createdAt).forEach(f => {
-    const opt = document.createElement('option');
-    opt.value = f.id; opt.textContent = f.name;
-    if(f.id === selectedId) opt.selected = true;
-    selectEl.appendChild(opt);
-  });
+  function addLevel(parentId, depth){
+    sortByOrder(childFolders(parentId)).forEach(f => {
+      const opt = document.createElement('option');
+      opt.value = f.id;
+      opt.textContent = '　'.repeat(depth) + (depth>0 ? '└ ' : '') + f.name;
+      if(f.id === selectedId) opt.selected = true;
+      selectEl.appendChild(opt);
+      addLevel(f.id, depth+1);
+    });
+  }
+  addLevel(null, 0);
   if(!selectedId) selectEl.value = '';
+}
+// même principe pour choisir un dossier PARENT (sous-dossiers) ; exclut le dossier lui-même
+// (et n'a pas besoin d'exclure ses descendants : à la création, il n'en a pas encore)
+function populateFolderParentSelect(selectEl, excludeId){
+  selectEl.innerHTML = '<option value="">— Aucun (dossier de premier niveau) —</option>';
+  function addLevel(parentId, depth){
+    sortByOrder(childFolders(parentId)).forEach(f => {
+      if(f.id === excludeId) return;
+      const opt = document.createElement('option');
+      opt.value = f.id;
+      opt.textContent = '　'.repeat(depth) + (depth>0 ? '⤷ ' : '') + f.name;
+      selectEl.appendChild(opt);
+      addLevel(f.id, depth+1);
+    });
+  }
+  addLevel(null, 0);
 }
 
 function renderDeck(){
@@ -970,8 +1092,9 @@ function renameFolder(folderId){
 function deleteFolder(folderId){
   const f = folders[folderId];
   if(!f) return;
-  if(!confirm(`Supprimer le dossier « ${f.name} » ? Les paquets qu'il contient seront conservés, sans dossier.`)) return;
+  if(!confirm(`Supprimer le dossier « ${f.name} » ? Les paquets qu'il contient seront conservés, sans dossier, et ses éventuels sous-dossiers deviendront des dossiers de premier niveau.`)) return;
   decksInFolder(folderId).forEach(d => { d.folderId = null; });
+  childFolders(folderId).forEach(sub => { sub.parentId = null; });
   delete folders[folderId];
   persistFolders(); persistDecks();
   renderHome();
@@ -1010,6 +1133,68 @@ document.getElementById('downloadExport').addEventListener('click', () => {
   a.remove();
   URL.revokeObjectURL(url);
 });
+
+/* export */
+function exportAllData(){
+  const payload = {
+    exportedAt: new Date().toISOString(),
+    version: 1,
+    folders,   // dossiers et sous-dossiers
+    decks,     // paquets
+    cards,     // cartes, avec interval/repetition/ease/due (= la maîtrise de chaque terme)
+    dailyStats,// historique d'assiduité / maîtrise / nombre de termes (pour les graphiques)
+  };
+  const text = JSON.stringify(payload, null, 2);
+  const blob = new Blob([text], { type:'application/json;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `fiches-sauvegarde-${todayStr()}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  showToast('Sauvegarde exportée');
+}
+
+/* import */
+function importAllData(file){
+  const reader = new FileReader();
+  reader.onload = () => {
+    let payload;
+    try{
+      payload = JSON.parse(reader.result);
+    }catch(e){
+      alert('Fichier illisible : ce n\'est pas un JSON valide.');
+      return;
+    }
+    if(!payload || typeof payload !== 'object' || !payload.decks || !payload.cards){
+      alert('Ce fichier ne ressemble pas à une sauvegarde de l\'application (dossiers/paquets/cartes introuvables).');
+      return;
+    }
+    const cardCount = Object.keys(payload.cards || {}).length;
+    const deckCount = Object.keys(payload.decks || {}).length;
+    const confirmMsg = `Importer cette sauvegarde va REMPLACER toutes les données actuelles ` +
+      `(${deckCount} paquet${deckCount>1?'s':''}, ${cardCount} carte${cardCount>1?'s':''} dans le fichier). ` +
+      `Cette action est irréversible. Continuer ?`;
+    if(!confirm(confirmMsg)) return;
+
+    folders = payload.folders || {};
+    decks = payload.decks || {};
+    cards = payload.cards || {};
+    dailyStats = payload.dailyStats || {};
+    persistFolders();
+    persistDecks();
+    persistCards();
+    persistDaily();
+    snapshotToday();
+    showToast('Sauvegarde importée');
+    showView('home');
+    renderHome();
+  };
+  reader.onerror = () => alert('Impossible de lire le fichier.');
+  reader.readAsText(file);
+}
 
 /* ================= étude ================= */
 function buildStudyQueue(cardIds, direction, shuffle){
@@ -1080,12 +1265,9 @@ function gradeCurrentCard(quality){
   cards[item.cardId] = scheduleCard(cards[item.cardId], quality);
   persistCards();
   recordReview(deckIdOfCard);
-  if(quality < 3){
-    // Correctif principal (voir commentaire sur scheduleCard) : la carte revient plus loin dans
-    // LA MÊME session au lieu de disparaître jusqu'à demain.
-    const insertAt = Math.min(studyQueue.length, studyIndex + 1 + REQUEUE_GAP);
-    studyQueue.splice(insertAt, 0, item);
-  }
+  // Correctif : une carte "Encore" n'est plus réinsérée plus loin dans CETTE session (ce qui
+  // pouvait donner l'impression de ne jamais avancer) — elle reste programmée pour aujourd'hui
+  // et réapparaîtra dans une prochaine session de révision du jour.
   studyIndex += 1;
   renderStudyCard();
 }
@@ -1219,7 +1401,7 @@ function openReviewModal(mode, scopeId){
     });
   } else if(mode === 'folder'){
     foldersLabel.textContent = 'Listes à inclure';
-    const deckIds = decksInFolder(scopeId).map(d=>d.id);
+    const deckIds = deckIdsInFolderTree(scopeId); // inclut aussi les listes des sous-dossiers
     reviewFolderSelection = new Set(deckIds);
     dueForScope = deckIds.reduce((s,id)=>s+dueCardsForDeck(id).length,0);
     deckIds
@@ -1329,6 +1511,19 @@ document.getElementById('saveDeck').addEventListener('click', () => {
   showToast('Paquet créé');
 });
 
+document.getElementById('deckRenameBtn').addEventListener('click', () => {
+  const deck = decks[currentDeckId];
+  if(!deck) return;
+  const name = prompt('Renommer le paquet :', deck.name);
+  if(name === null) return;
+  const trimmed = name.trim();
+  if(!trimmed) return;
+  deck.name = trimmed;
+  persistDecks();
+  renderDeck();
+  showToast('Paquet renommé');
+});
+
 document.getElementById('deckDeleteBtn').addEventListener('click', () => {
   const deck = decks[currentDeckId];
   if(!deck) return;
@@ -1345,6 +1540,7 @@ const modalFolder = document.getElementById('modalFolder');
 document.getElementById('fabNewFolder').addEventListener('click', () => {
   modalFabMenu.classList.add('hidden');
   document.getElementById('newFolderName').value = '';
+  populateFolderParentSelect(document.getElementById('newFolderParent'), null);
   modalFolder.classList.remove('hidden');
   document.getElementById('newFolderName').focus();
 });
@@ -1353,8 +1549,9 @@ modalFolder.addEventListener('click', (e) => { if(e.target === modalFolder) moda
 document.getElementById('saveFolder').addEventListener('click', () => {
   const name = document.getElementById('newFolderName').value.trim();
   if(!name) return;
+  const parentId = document.getElementById('newFolderParent').value || null;
   const id = makeId('folder');
-  folders[id] = { id, name, createdAt: Date.now() };
+  folders[id] = { id, name, parentId, createdAt: Date.now() };
   persistFolders();
   modalFolder.classList.add('hidden');
   renderHome();
@@ -1556,6 +1753,12 @@ function renderStatsFor(scope){
           ${deckRows.map(r => `<tr><td>${escapeHTML(r.name)}</td><td>${r.total}</td><td>${r.due}</td><td>${r.mastery===null?'—':r.mastery+'%'}</td></tr>`).join('') || '<tr><td colspan="4">Aucun paquet.</td></tr>'}
         </tbody>
       </table>
+      <div class="section-label">Sauvegarde</div>
+      <div class="deck-actions">
+        <button class="btn full" id="exportAllBtn">Exporter toutes les données (JSON)</button>
+        <button class="btn full" id="importAllBtn">Importer une sauvegarde (JSON)</button>
+        <input type="file" id="importAllFile" accept="application/json,.json" class="hidden">
+      </div>
     `;
   } else if(scope.type === 'folder'){
     const f = folders[scope.id];
@@ -1607,10 +1810,123 @@ function renderStatsFor(scope){
 
     ${breakdownHTML}
   `;
+  if(!scope){
+    document.getElementById('exportAllBtn').addEventListener('click', exportAllData);
+    const importFile = document.getElementById('importAllFile');
+    document.getElementById('importAllBtn').addEventListener('click', () => importFile.click());
+    importFile.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if(file) importAllData(file);
+      importFile.value = '';
+    });
+  }
 }
 
-/* ================= service worker ================= */
-if('serviceWorker' in navigator){
+/* ================= note derrière l'étoile ================= */
+const LS_NOTE = 'fiches_note_v1';
+const modalNote = document.getElementById('modalNote');
+function openNoteModal(){
+  const note = localStorage.getItem(LS_NOTE) || '';
+  const display = document.getElementById('noteDisplay');
+  const editWrap = document.getElementById('noteEditWrap');
+  const editBtn = document.getElementById('editNoteBtn');
+  const saveBtn = document.getElementById('saveNoteBtn');
+  if(note){
+    display.textContent = note;
+    display.classList.remove('hidden');
+    editWrap.classList.add('hidden');
+    editBtn.classList.remove('hidden');
+    saveBtn.classList.add('hidden');
+  } else {
+    display.classList.add('hidden');
+    editWrap.classList.remove('hidden');
+    document.getElementById('noteInput').value = '';
+    editBtn.classList.add('hidden');
+    saveBtn.classList.remove('hidden');
+  }
+  modalNote.classList.remove('hidden');
+}
+document.getElementById('starBtn').addEventListener('click', openNoteModal);
+document.getElementById('closeNote').addEventListener('click', () => modalNote.classList.add('hidden'));
+modalNote.addEventListener('click', (e) => { if(e.target === modalNote) modalNote.classList.add('hidden'); });
+document.getElementById('editNoteBtn').addEventListener('click', () => {
+  document.getElementById('noteInput').value = localStorage.getItem(LS_NOTE) || '';
+  document.getElementById('noteDisplay').classList.add('hidden');
+  document.getElementById('noteEditWrap').classList.remove('hidden');
+  document.getElementById('editNoteBtn').classList.add('hidden');
+  document.getElementById('saveNoteBtn').classList.remove('hidden');
+});
+document.getElementById('saveNoteBtn').addEventListener('click', () => {
+  localStorage.setItem(LS_NOTE, document.getElementById('noteInput').value);
+  showToast('Texte enregistré');
+  openNoteModal();
+});
+
+/* ================= St du jour (calendrier catholique romain) ================= */
+// Table vérifiée par recoupement entre le Calendrier Romain Général (missel romain, section
+// "General Roman Calendar", cf. liturgyoffice.org.uk) et l'ensemble des décrets pontificaux qui
+// l'ont modifié depuis 1969 (Jean XXIII et Jean-Paul II en 2014, Paul VI en 2019, Notre-Dame de
+// Lorette en 2019, Ste Faustine Kowalska en 2020, St Grégoire de Narek / St Jean d'Avila /
+// Ste Hildegarde de Bingen en 2021, Stes Marthe-Marie-Lazare en 2021, Ste Teresa de Calcutta en
+// 2025). Volontairement partielle : à la différence des calendriers "un saint par jour" (type
+// Nominis), le calendrier universel ne fixe pas de saint propre pour chaque jour de l'année — les
+// jours sans célébration retombent sur "✦ Fiches". Les fêtes mobiles calées sur Pâques (Baptême du
+// Seigneur, Sainte Trinité, Fête-Dieu, Christ-Roi, Sainte Famille, Marie Mère de l'Église...) ne
+// sont pas représentables dans une table à date fixe et sont donc omises.
+const SAINTS = {
+    '01-01':'Ste Marie, Mère de Dieu','01-02':'Sts Basile le Grand et Grégoire de Nazianze','01-03':'Très Saint Nom de Jésus','01-06':'Épiphanie du Seigneur','01-07':'St Raymond de Peñafort',
+    '01-13':'St Hilaire de Poitiers','01-17':'St Antoine le Grand','01-20':'St Fabien et St Sébastien','01-21':'Ste Agnès','01-22':'St Vincent, diacre et martyr',
+    '01-24':'St François de Sales','01-25':'Conversion de St Paul','01-26':'Sts Timothée et Tite','01-27':'Ste Angèle Merici','01-28':'St Thomas d\'Aquin',
+    '01-31':'St Jean Bosco',
+    '02-02':'Présentation du Seigneur (Chandeleur)','02-03':'St Blaise et St Ansgar','02-05':'Ste Agathe','02-06':'St Paul Miki et ses compagnons','02-08':'St Jérôme Émilien et Ste Joséphine Bakhita',
+    '02-10':'Ste Scholastique','02-11':'Notre-Dame de Lourdes','02-14':'Sts Cyrille et Méthode','02-17':'Les Sept Saints Fondateurs des Servites','02-21':'St Pierre Damien',
+    '02-22':'Chaire de St Pierre','02-23':'St Polycarpe','02-27':'St Grégoire de Narek',
+    '03-04':'St Casimir','03-07':'Stes Perpétue et Félicité','03-08':'St Jean de Dieu','03-09':'Ste Françoise Romaine','03-17':'St Patrice',
+    '03-18':'St Cyrille de Jérusalem','03-19':'St Joseph, Époux de la Bienheureuse Vierge Marie','03-23':'St Turibio de Mogrovejo','03-25':'Annonciation du Seigneur',
+    '04-02':'St François de Paule','04-04':'St Isidore de Séville','04-05':'St Vincent Ferrier','04-07':'St Jean-Baptiste de La Salle','04-11':'St Stanislas',
+    '04-13':'St Martin Ier','04-21':'St Anselme de Cantorbéry','04-23':'St Georges et St Adalbert','04-24':'St Fidèle de Sigmaringen','04-25':'St Marc',
+    '04-28':'St Pierre Chanel et St Louis-Marie Grignion de Montfort','04-29':'Ste Catherine de Sienne','04-30':'St Pie V',
+    '05-01':'St Joseph Artisan','05-02':'St Athanase','05-03':'Sts Philippe et Jacques','05-10':'St Jean d\'Avila','05-12':'Sts Nérée, Achillée et Pancrace',
+    '05-13':'Notre-Dame de Fatima','05-14':'St Matthias','05-18':'St Jean Ier','05-20':'St Bernardin de Sienne','05-21':'St Christophe Magallanes et ses compagnons',
+    '05-22':'Ste Rita de Cascia','05-25':'St Bède le Vénérable, St Grégoire VII et Ste Marie-Madeleine de Pazzi','05-26':'St Philippe Néri','05-27':'St Augustin de Cantorbéry','05-29':'St Paul VI',
+    '05-31':'Visitation de la Bienheureuse Vierge Marie',
+    '06-01':'St Justin','06-02':'Sts Marcellin et Pierre','06-03':'St Charles Lwanga et ses compagnons','06-05':'St Boniface','06-06':'St Norbert',
+    '06-09':'St Éphrem','06-11':'St Barnabé','06-13':'St Antoine de Padoue','06-19':'St Romuald','06-21':'St Louis de Gonzague',
+    '06-22':'St Paulin de Nole, St Jean Fisher et St Thomas More','06-24':'Nativité de St Jean-Baptiste','06-27':'St Cyrille d\'Alexandrie','06-28':'St Irénée de Lyon','06-29':'Sts Pierre et Paul',
+    '06-30':'Premiers Martyrs de l\'Église de Rome',
+    '07-03':'St Thomas, Apôtre','07-04':'Ste Élisabeth de Portugal','07-05':'St Antoine-Marie Zaccaria','07-06':'Ste Maria Goretti','07-09':'St Augustin Zhao Rong et ses compagnons',
+    '07-11':'St Benoît','07-13':'St Henri','07-14':'St Camille de Lellis','07-15':'St Bonaventure','07-16':'Notre-Dame du Mont-Carmel',
+    '07-20':'St Apollinaire','07-21':'St Laurent de Brindisi','07-22':'Ste Marie-Madeleine','07-23':'Ste Brigitte de Suède','07-24':'St Charbel Makhlouf',
+    '07-25':'St Jacques le Majeur','07-26':'Sts Joachim et Anne','07-29':'Stes Marthe et Marie, et St Lazare','07-30':'St Pierre Chrysologue','07-31':'St Ignace de Loyola',
+    '08-01':'St Alphonse de Liguori','08-02':'St Eusèbe de Verceil et St Pierre-Julien Eymard','08-04':'St Jean-Marie Vianney (Curé d\'Ars)','08-05':'Dédicace de la basilique Sainte-Marie-Majeure','08-06':'Transfiguration du Seigneur',
+    '08-07':'St Sixte II et ses compagnons, St Gaétan','08-08':'St Dominique','08-09':'Ste Thérèse-Bénédicte de la Croix (Edith Stein)','08-10':'St Laurent','08-11':'Ste Claire',
+    '08-12':'Ste Jeanne-Françoise de Chantal','08-13':'Sts Pontien et Hippolyte','08-14':'St Maximilien Kolbe','08-15':'Assomption de la Bienheureuse Vierge Marie','08-16':'St Étienne de Hongrie',
+    '08-19':'St Jean Eudes','08-20':'St Bernard de Clairvaux','08-21':'St Pie X','08-22':'Vierge Marie, Reine','08-23':'Ste Rose de Lima',
+    '08-24':'St Barthélemy','08-25':'St Louis et St Joseph Calasanz','08-27':'Ste Monique','08-28':'St Augustin','08-29':'Martyre de St Jean-Baptiste',
+    '09-03':'St Grégoire le Grand','09-05':'Ste Teresa de Calcutta (Mère Teresa)','09-08':'Nativité de la Bienheureuse Vierge Marie','09-09':'St Pierre Claver','09-12':'Très Saint Nom de Marie',
+    '09-13':'St Jean Chrysostome','09-14':'La Croix Glorieuse','09-15':'Notre-Dame des Douleurs','09-16':'Sts Corneille et Cyprien','09-17':'St Robert Bellarmin et Ste Hildegarde de Bingen',
+    '09-19':'St Janvier','09-20':'Sts André Kim Taegon, Paul Chong Hasang et leurs compagnons','09-21':'St Matthieu','09-23':'St Pio de Pietrelcina (Padre Pio)','09-26':'Sts Côme et Damien',
+    '09-27':'St Vincent de Paul','09-28':'St Venceslas, St Laurent Ruiz et ses compagnons','09-29':'Sts Michel, Gabriel et Raphaël, Archanges','09-30':'St Jérôme',
+    '10-01':'Ste Thérèse de l\'Enfant-Jésus','10-02':'Sts Anges Gardiens','10-04':'St François d\'Assise','10-05':'Ste Faustine Kowalska','10-06':'St Bruno',
+    '10-07':'Notre-Dame du Rosaire','10-09':'St Denis et ses compagnons, St Jean Leonardi','10-11':'St Jean XXIII','10-14':'St Calliste Ier','10-15':'Ste Thérèse d\'Avila',
+    '10-16':'Ste Edwige et Ste Marguerite-Marie Alacoque','10-17':'St Ignace d\'Antioche','10-18':'St Luc','10-19':'Sts Jean de Brébeuf et Isaac Jogues et leurs compagnons, St Paul de la Croix','10-22':'St Jean-Paul II',
+    '10-23':'St Jean de Capistran','10-24':'St Antoine-Marie Claret','10-28':'Sts Simon et Jude',
+    '11-01':'Tous les Saints (Toussaint)','11-02':'Commémoration de tous les fidèles défunts','11-03':'St Martin de Porrès','11-04':'St Charles Borromée','11-09':'Dédicace de la basilique du Latran',
+    '11-10':'St Léon le Grand','11-11':'St Martin de Tours','11-12':'St Josaphat','11-15':'St Albert le Grand','11-16':'Ste Marguerite d\'Écosse et Ste Gertrude',
+    '11-17':'Ste Élisabeth de Hongrie','11-18':'Dédicace des basiliques St Pierre et St Paul','11-21':'Présentation de la Bienheureuse Vierge Marie','11-22':'Ste Cécile','11-23':'St Clément Ier et St Colomban',
+    '11-24':'St André Dung-Lac et ses compagnons','11-25':'Ste Catherine d\'Alexandrie','11-30':'St André, Apôtre',
+    '12-03':'St François Xavier','12-04':'St Jean Damascène','12-06':'St Nicolas','12-07':'St Ambroise','12-08':'Immaculée Conception de la Bienheureuse Vierge Marie',
+    '12-09':'St Juan Diego','12-10':'Notre-Dame de Lorette','12-11':'St Damase Ier','12-12':'Notre-Dame de Guadalupe','12-13':'Ste Lucie',
+    '12-14':'St Jean de la Croix','12-21':'St Pierre Canisius','12-23':'St Jean de Kenty','12-25':'Nativité du Seigneur (Noël)','12-26':'St Étienne, Premier Martyr',
+    '12-27':'St Jean, Apôtre et Évangéliste','12-28':'Sts Innocents','12-29':'St Thomas Becket','12-31':'St Sylvestre Ier'
+};
+function saintOfDay(){
+  const d = new Date();
+  const key = String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  return SAINTS[key] || '✦ Fiches';
+}
+
+/* ================= service worker ================= */if('serviceWorker' in navigator){
   navigator.serviceWorker.register('sw.js').catch(()=>{});
 }
 
