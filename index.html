@@ -936,8 +936,8 @@ function renderFolderTree(parentId, container){
       <span class="due-badge ${due===0?'zero':''}">${due}</span>
       <button class="fbtn" data-act="stats" title="Statistiques">☙</button>
       <button class="fbtn" data-act="rename" title="Renommer">✎</button>
-      <button class="fbtn" data-act="up" title="Monter">◭</button>
-      <button class="fbtn" data-act="down" title="Descendre">⧩</button>
+      <button class="fbtn" data-act="up" title="Monter">⮙</button>
+      <button class="fbtn" data-act="down" title="Descendre">⮛</button>
       <button class="fbtn" data-act="del" title="Supprimer">✕</button>
     `;
     const body = document.createElement('div');
@@ -983,8 +983,8 @@ function renderDeckRow(deck){
     <span class="due-badge ${due===0?'zero':''}">${due}</span>
     <div class="right-controls">
       <div class="order-controls">
-        <button class="order-btn" data-act="up" title="Monter">◭</button>
-        <button class="order-btn" data-act="down" title="Descendre">⧩</button>
+        <button class="order-btn" data-act="up" title="Monter">⮙</button>
+        <button class="order-btn" data-act="down" title="Descendre">⮛</button>
       </div>
     </div>
   `;
