@@ -1019,7 +1019,7 @@ function populateFolderSelect(selectEl, selectedId){
 // même principe pour choisir un dossier PARENT (sous-dossiers) ; exclut le dossier lui-même
 // (et n'a pas besoin d'exclure ses descendants : à la création, il n'en a pas encore)
 function populateFolderParentSelect(selectEl, excludeId){
-  selectEl.innerHTML = '<option value="">— Aucun (dossier de premier niveau) —</option>';
+  selectEl.innerHTML = '<option value="">Aucun (dossier de premier niveau)</option>';
   function addLevel(parentId, depth){
     sortByOrder(childFolders(parentId)).forEach(f => {
       if(f.id === excludeId) return;
