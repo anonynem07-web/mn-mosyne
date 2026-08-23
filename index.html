@@ -1007,7 +1007,7 @@ function populateFolderSelect(selectEl, selectedId){
     sortByOrder(childFolders(parentId)).forEach(f => {
       const opt = document.createElement('option');
       opt.value = f.id;
-      opt.textContent = '　'.repeat(depth) + (depth>0 ? '└ ' : '') + f.name;
+      opt.textContent = '　'.repeat(depth) + (depth>0 ? '⤷ ' : '') + f.name;
       if(f.id === selectedId) opt.selected = true;
       selectEl.appendChild(opt);
       addLevel(f.id, depth+1);
