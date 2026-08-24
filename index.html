@@ -155,7 +155,9 @@ main{flex:1;padding:6px 18px calc(24px + var(--safe-bottom)) 18px;overflow-y:aut
 .btn:disabled{opacity:.4;cursor:not-allowed;}
 
 .folder-select-row{display:flex;align-items:center;gap:8px;margin:0 0 12px 0;font-family:var(--font-mono);font-size:12px;color:rgba(251,246,234,.6);}
-.folder-select-row select{background:var(--card);color:var(--ink);border:none;border-radius:6px;padding:6px 8px;font-family:var(--font-body);font-size:13px;flex:1;}
+.folder-select-row select{background:rgba(251,246,234,.08);color:var(--card);border:1px solid rgba(251,246,234,.2);border-radius:6px;padding:6px 8px;font-family:var(--font-body);font-size:13px;flex:1;}
+.folder-select-row select:hover{border-color:rgba(251,246,234,.35);}
+.folder-select-row select option{background:var(--walnut);color:var(--card);}
 
 .card-row{
   display:flex;gap:10px;align-items:flex-start;
@@ -173,6 +175,9 @@ main{flex:1;padding:6px 18px calc(24px + var(--safe-bottom)) 18px;overflow-y:aut
 .card-row .important-mark{color:var(--brass-deep);font-size:13px;line-height:1;}
 .mastery-badge{font-family:var(--font-mono);font-size:10.5px;color:var(--brass-deep);background:var(--card-shade);border-radius:999px;padding:2px 8px;white-space:nowrap;}
 .mastery-badge.new{color:var(--ink-soft);}
+.star-toggle{background:none;border:none;padding:2px;font-size:17px;line-height:1;color:var(--ink-soft);opacity:.55;}
+.star-toggle:hover{opacity:1;color:var(--brass-deep);}
+.star-toggle.active{color:var(--brass-deep);opacity:1;}
 
 /* ---------- study ---------- */
 .study-wrap{display:flex;flex-direction:column;align-items:center;padding-top:6px;}
@@ -213,15 +218,24 @@ main{flex:1;padding:6px 18px calc(24px + var(--safe-bottom)) 18px;overflow-y:aut
 .face .face-text .def-line.secondary{opacity:.6;font-size:.8em;font-weight:400;}
 .face.back{transform:rotateY(180deg);}
 .face .stamp{
-  position:absolute;top:14px;right:14px;z-index:5;
-  width:46px;height:46px;border-radius:50%;
-  display:flex;align-items:center;justify-content:center;
-  font-family:var(--font-mono);font-size:12px;font-weight:600;color:var(--brass-deep);
-  border:2px solid var(--brass-deep);
-  box-shadow:0 0 0 2px var(--card), 0 0 0 3px var(--brass-deep);
-  transform:rotate(-8deg);opacity:.85;letter-spacing:.02em;
-  background:var(--card);
+  position:absolute;bottom:12px;right:12px;z-index:5;
+  width:60px;height:60px;
+  pointer-events:none;
+  mix-blend-mode:multiply;
+  opacity:.78;
+  transform:rotate(-6deg);
 }
+.face .stamp svg{display:block;width:100%;height:100%;}
+.face .important-stamp{
+  position:absolute;top:14px;right:14px;z-index:5;
+  width:30px;height:30px;
+  pointer-events:none;
+  mix-blend-mode:multiply;
+  opacity:.4;
+  transform:rotate(11deg);
+}
+.face .important-stamp.hidden{display:none;}
+.face .important-stamp svg{display:block;width:100%;height:100%;}
 .tap-hint{font-family:var(--font-mono);font-size:11.5px;color:rgba(251,246,234,.5);margin-bottom:18px;text-align:center;}
 
 .grade-row{display:flex;gap:8px;width:100%;max-width:340px;}
@@ -403,10 +417,12 @@ main{flex:1;padding:6px 18px calc(24px + var(--safe-bottom)) 18px;overflow-y:aut
                   <div class="face-label">Question</div>
                   <div class="face-text" id="cardFrontText"></div>
                   <div class="stamp" id="cardStampFront"></div>
+                  <div class="important-stamp hidden" id="cardImportantStampFront"></div>
                 </div>
                 <div class="face back">
                   <div class="face-label">Réponse</div>
                   <div class="face-text" id="cardBackText"></div>
+                  <div class="important-stamp hidden" id="cardImportantStampBack"></div>
                 </div>
               </div>
             </div>
@@ -677,7 +693,7 @@ const EARLY_PENALTY_MAX = 0.35; // jusqu'à -35% d'intervalle si révisée dès 
 // ces trois notes produisaient exactement le même intervalle immédiat (seul le facteur de
 // facilité, qui n'influence que les révisions futures, différait) ; on applique désormais un
 // multiplicateur immédiat sur l'intervalle calculé, en plus de l'ajustement du facteur de facilité.
-const QUALITY_INTERVAL_MULTIPLIER = { 3: 0.8, 4: 1.0, 5: 1.3 };
+const QUALITY_INTERVAL_MULTIPLIER = { 3: 0.85, 4: 1.0, 5: 1.2 };
 function scheduleCard(card, quality){
   const next = { ...card };
   const today = todayStr();
@@ -713,14 +729,14 @@ function previewInterval(card, quality){
 
 /* ================= maîtrise ================= */
 // Simplification assumée : une carte est considérée "pleinement maîtrisée" (100%) à partir d'un
-// intervalle de 21 jours (seuil classique de carte "mature"), et 0% pour une carte neuve.
+// intervalle de 17 jours (choix ajusté), et 0% pour une carte neuve.
 // C'est un indicateur relatif, pas une vraie probabilité de rétention (il faudrait un modèle
 // type FSRS pour ça) — mais il donne une tendance fiable et cohérente dans le temps.
 // Note : la maîtrise est calculée par CARTE, pas par sens de révision. Si une carte est révisée
 // tantôt terme→définition, tantôt définition→terme, un seul intervalle/facteur de facilité est
 // mémorisé pour les deux sens : une carte jugée maîtrisée dans un sens est donc automatiquement
 // considérée maîtrisée dans l'autre. Il n'y a pas de suivi séparé par sens de révision.
-const MASTERY_CAP_DAYS = 13;
+const MASTERY_CAP_DAYS = 17;
 function masteryPct(card){
   return Math.max(0, Math.min(100, Math.round((card.interval||0) / MASTERY_CAP_DAYS * 100)));
 }
@@ -846,6 +862,69 @@ function renderDefinition(text){
 // Aperçu compact une ligne (listes) : les retours à la ligne volontaires deviennent " / ".
 function renderMarkupInline(text){
   return renderMarkup(text.split('\\').map(s=>s.trim()).join(' / '));
+}
+
+// Petit hash déterministe pour varier le grain d'un tampon à l'autre (recto/verso, carte par
+// carte) sans dépendre de Math.random() — même carte, même grain à chaque rendu.
+function hashSeed(str){
+  let h = 0;
+  for(let i=0;i<str.length;i++){ h = (h*31 + str.charCodeAt(i)) % 97; }
+  return h + 1;
+}
+
+// Rendu des tampons (maîtrise / importance) en SVG, façon tampon encreur réel :
+// - Fond transparent : le tampon s'applique SUR la fiche (mix-blend-mode:multiply en CSS),
+//   les lignes bleues doivent rester visibles au travers, comme de l'encre posée sur du papier.
+// - L'aspect "usé" ne vient PAS d'un flou/déplacement (ça donne un flou numérique), mais d'une
+//   véritable érosion du tracé : un bruit de Perlin est seuillé en un masque tout-ou-rien
+//   (feColorMatrix + feComposite "in"), qui grignote localement l'encre — grain fin au centre,
+//   bords rongés/irréguliers en périphérie. C'est la même technique que les habillages "tampon
+//   grunge" en SVG.
+function grungeFilterDefs(id, baseFrequency, erosion){
+  const seed = hashSeed(id);
+  return `<filter id="g-${id}" x="-50%" y="-50%" width="200%" height="200%">
+    <feTurbulence type="fractalNoise" baseFrequency="${baseFrequency}" numOctaves="2" seed="${seed}" result="n"/>
+    <feColorMatrix in="n" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 9 ${erosion}" result="grain"/>
+    <feComposite in="SourceGraphic" in2="grain" operator="in"/>
+  </filter>`;
+}
+
+function buildMasteryStampSVG(pct, seedId){
+  const cx=60, cy=60, rOuter=50, rInner=34, rText=41;
+  return `<svg viewBox="0 0 120 120" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <defs>
+      ${grungeFilterDefs(seedId, 0.75, -3.6)}
+      <path id="atop-${seedId}" d="M ${cx-rText},${cy} A ${rText},${rText} 0 0 1 ${cx+rText},${cy}"/>
+      <path id="abot-${seedId}" d="M ${cx-rText},${cy} A ${rText},${rText} 0 0 1 ${cx+rText},${cy}" transform="rotate(180 ${cx} ${cy})"/>
+    </defs>
+    <g filter="url(#g-${seedId})" fill="none" stroke="var(--brass-deep)">
+      <circle cx="${cx}" cy="${cy}" r="${rOuter}" stroke-width="2.6"/>
+      <circle cx="${cx}" cy="${cy}" r="${rInner}" stroke-width="1.4" stroke-linecap="round" stroke-dasharray="0.4 4.4"/>
+    </g>
+    <g fill="var(--brass-deep)" opacity="0.92">
+      <text font-family="var(--font-mono)" font-size="9" font-weight="700" letter-spacing="1.5" stroke="none">
+        <textPath href="#atop-${seedId}" xlink:href="#atop-${seedId}" startOffset="50%" text-anchor="middle">TAUX DE MAÎTRISE</textPath>
+      </text>
+      <text font-family="var(--font-mono)" font-size="9" font-weight="700" letter-spacing="1.5" stroke="none">
+        <textPath href="#abot-${seedId}" xlink:href="#abot-${seedId}" startOffset="50%" text-anchor="middle">ENS 2027</textPath>
+      </text>
+      <text x="${cx}" y="${cy+7}" text-anchor="middle" font-family="var(--font-display)" font-size="30" font-weight="700" stroke="none">${pct}%</text>
+    </g>
+  </svg>`;
+}
+
+function buildImportantStampSVG(seedId){
+  return `<svg viewBox="0 0 40 40">
+    <defs>${grungeFilterDefs(seedId, 0.95, -3)}</defs>
+    <path filter="url(#g-${seedId})" fill="var(--brass-deep)" stroke="none"
+      d="M20,4 L23.82,14.74 L35.22,15.06 L26.18,22.01 L29.40,32.94 L20,26.5 L10.60,32.94 L13.82,22.01 L4.78,15.06 L16.18,14.74 Z"/>
+    <g fill="var(--brass-deep)" opacity="0.7">
+      <circle cx="6" cy="10" r="0.8"/><circle cx="34" cy="9" r="0.6"/><circle cx="37" cy="20" r="0.5"/>
+      <circle cx="3" cy="23" r="0.7"/><circle cx="12" cy="3" r="0.5"/><circle cx="29" cy="3" r="0.6"/>
+      <circle cx="33" cy="30" r="0.5"/><circle cx="8" cy="34" r="0.6"/><circle cx="20" cy="1" r="0.4"/>
+      <circle cx="38" cy="26" r="0.5"/>
+    </g>
+  </svg>`;
 }
 
 /* ================= toast ================= */
@@ -1156,11 +1235,26 @@ function renderDeck(){
       </div>
       <div class="side">
         <span class="mastery-badge ${c.interval?'':'new'}">${c.interval ? m+'%' : 'neuf'}</span>
+        <button class="star-toggle ${c.important?'active':''}" data-act="star" aria-label="Marquer comme importante" title="Marquer comme importante">${c.important ? '★' : '☆'}</button>
       </div>
     `;
+    row.querySelector('[data-act="star"]').addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleCardImportant(c.id);
+    });
     row.addEventListener('click', () => openCardModal(c.id, 'deck'));
     list.appendChild(row);
   });
+}
+
+// Bascule le statut "importante" d'une carte directement depuis la liste, sans passer par la
+// modale de modification.
+function toggleCardImportant(cardId){
+  const c = cards[cardId];
+  if(!c) return;
+  c.important = !c.important;
+  persistCards();
+  renderDeck();
 }
 
 document.getElementById('deckFolderSelect').addEventListener('change', (e) => {
@@ -1342,7 +1436,11 @@ function renderStudyCard(){
   document.getElementById('studyProgress').textContent = `${studyIndex+1} / ${studyQueue.length}`;
   document.getElementById('cardFrontText').innerHTML = frontHTML;
   document.getElementById('cardBackText').innerHTML = backHTML;
-  document.getElementById('cardStampFront').textContent = (card.interval ? masteryPct(card) : 0) + '%';
+  document.getElementById('cardStampFront').innerHTML = buildMasteryStampSVG((card.interval ? masteryPct(card) : 0), 'mastery-' + item.cardId);
+  document.getElementById('cardImportantStampFront').innerHTML = card.important ? buildImportantStampSVG('imp-front-' + item.cardId) : '';
+  document.getElementById('cardImportantStampFront').classList.toggle('hidden', !card.important);
+  document.getElementById('cardImportantStampBack').innerHTML = card.important ? buildImportantStampSVG('imp-back-' + item.cardId) : '';
+  document.getElementById('cardImportantStampBack').classList.toggle('hidden', !card.important);
 
   const flip = document.getElementById('flipCard');
   flip.classList.remove('flipped');
