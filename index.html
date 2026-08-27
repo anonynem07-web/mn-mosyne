@@ -378,6 +378,8 @@ main{flex:1;padding:6px 18px calc(24px + var(--safe-bottom)) 18px;overflow-y:aut
         <select id="deckSortSelect">
           <option value="created">Date de création</option>
           <option value="lastAnswer">Dernière réponse</option>
+          <option value="important">Importance</option>
+          <option value="alpha">Ordre alphabétique</option>
         </select>
       </div>
       <div class="deck-actions">
@@ -414,13 +416,13 @@ main{flex:1;padding:6px 18px calc(24px + var(--safe-bottom)) 18px;overflow-y:aut
             <div class="flip-card" id="flipCard">
               <div class="flip-inner">
                 <div class="face front">
-                  <div class="face-label">Question</div>
+                  <div class="face-label" id="faceLabelFront">Question</div>
                   <div class="face-text" id="cardFrontText"></div>
                   <div class="stamp" id="cardStampFront"></div>
                   <div class="important-stamp hidden" id="cardImportantStampFront"></div>
                 </div>
                 <div class="face back">
-                  <div class="face-label">Réponse</div>
+                  <div class="face-label" id="faceLabelBack">Réponse</div>
                   <div class="face-text" id="cardBackText"></div>
                   <div class="important-stamp hidden" id="cardImportantStampBack"></div>
                 </div>
@@ -617,6 +619,52 @@ main{flex:1;padding:6px 18px calc(24px + var(--safe-bottom)) 18px;overflow-y:aut
       <button class="btn" id="closeNote">Fermer</button>
       <button class="btn primary" id="editNoteBtn">Modifier</button>
       <button class="btn primary hidden" id="saveNoteBtn">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: modifier / fusionner un paquet ===== -->
+<div class="modal-backdrop hidden" id="modalDeckEdit">
+  <div class="modal">
+    <h3>Modifier le paquet</h3>
+    <div class="field">
+      <label for="deckEditName">Nom</label>
+      <input type="text" id="deckEditName">
+    </div>
+    <div class="modal-actions">
+      <button class="btn" id="cancelDeckEdit">Annuler</button>
+      <button class="btn primary" id="saveDeckEdit">Enregistrer</button>
+    </div>
+    <div class="field" style="margin-top:6px;">
+      <label for="deckMergeTarget">Fusionner avec un autre paquet</label>
+      <select id="deckMergeTarget"></select>
+      <p class="hint">Toutes les cartes du paquet choisi rejoignent celui-ci ; le paquet choisi est ensuite supprimé. Irréversible.</p>
+    </div>
+    <div class="modal-actions">
+      <button class="btn danger full" id="doDeckMerge">Fusionner</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: modifier / fusionner un dossier ===== -->
+<div class="modal-backdrop hidden" id="modalFolderEdit">
+  <div class="modal">
+    <h3>Modifier le dossier</h3>
+    <div class="field">
+      <label for="folderEditName">Nom</label>
+      <input type="text" id="folderEditName">
+    </div>
+    <div class="modal-actions">
+      <button class="btn" id="cancelFolderEdit">Annuler</button>
+      <button class="btn primary" id="saveFolderEdit">Enregistrer</button>
+    </div>
+    <div class="field" style="margin-top:6px;">
+      <label for="folderMergeTarget">Fusionner avec un autre dossier</label>
+      <select id="folderMergeTarget"></select>
+      <p class="hint">Tous les paquets et sous-dossiers du dossier choisi rejoignent celui-ci ; le dossier choisi est ensuite supprimé. Irréversible.</p>
+    </div>
+    <div class="modal-actions">
+      <button class="btn danger full" id="doFolderMerge">Fusionner</button>
     </div>
   </div>
 </div>
@@ -1219,6 +1267,10 @@ function renderDeck(){
   let arr = cardsForDeck(deck.id);
   if(deckSortMode === 'lastAnswer'){
     arr = arr.slice().sort((a,b) => lastAnswerRank(a) - lastAnswerRank(b) || b.createdAt - a.createdAt);
+  } else if(deckSortMode === 'important'){
+    arr = arr.slice().sort((a,b) => (b.important?1:0) - (a.important?1:0) || b.createdAt - a.createdAt);
+  } else if(deckSortMode === 'alpha'){
+    arr = arr.slice().sort((a,b) => a.front.localeCompare(b.front, 'fr', { sensitivity:'base' }));
   } else {
     arr = arr.slice().sort((a,b)=> b.createdAt - a.createdAt);
   }
@@ -1266,17 +1318,67 @@ document.getElementById('deckFolderSelect').addEventListener('change', (e) => {
 });
 
 /* ================= dossiers : actions ================= */
-function renameFolder(folderId){
+const modalFolderEdit = document.getElementById('modalFolderEdit');
+let editingFolderId = null;
+function populateFolderMergeSelect(excludeId){
+  const sel = document.getElementById('folderMergeTarget');
+  sel.innerHTML = '';
+  const excluded = new Set(descendantFolderIds(excludeId)); // ne pas fusionner avec soi-même ni un de ses propres sous-dossiers
+  const others = Object.values(folders).filter(f => !excluded.has(f.id));
+  if(others.length === 0){
+    sel.innerHTML = '<option value="">Aucun autre dossier</option>';
+    sel.disabled = true;
+    return;
+  }
+  sel.disabled = false;
+  others.sort((a,b)=>a.name.localeCompare(b.name,'fr')).forEach(f => {
+    const opt = document.createElement('option');
+    opt.value = f.id; opt.textContent = f.name;
+    sel.appendChild(opt);
+  });
+}
+function openFolderEditModal(folderId){
+  editingFolderId = folderId;
   const f = folders[folderId];
   if(!f) return;
-  const name = prompt('Renommer le dossier :', f.name);
-  if(name === null) return;
-  const trimmed = name.trim();
-  if(!trimmed) return;
-  f.name = trimmed;
+  document.getElementById('folderEditName').value = f.name;
+  populateFolderMergeSelect(folderId);
+  modalFolderEdit.classList.remove('hidden');
+}
+function renameFolder(folderId){ openFolderEditModal(folderId); }
+document.getElementById('cancelFolderEdit').addEventListener('click', () => modalFolderEdit.classList.add('hidden'));
+modalFolderEdit.addEventListener('click', (e) => { if(e.target === modalFolderEdit) modalFolderEdit.classList.add('hidden'); });
+document.getElementById('saveFolderEdit').addEventListener('click', () => {
+  const f = folders[editingFolderId];
+  if(!f) return;
+  const name = document.getElementById('folderEditName').value.trim();
+  if(!name) return;
+  f.name = name;
   persistFolders();
   renderHome();
+  modalFolderEdit.classList.add('hidden');
+  showToast('Dossier renommé');
+});
+// Déplace les paquets et sous-dossiers directs du dossier source dans le dossier cible, puis
+// supprime le dossier source. La sélection exclut déjà le dossier cible lui-même et ses propres
+// descendants (voir populateFolderMergeSelect), donc aucun cycle n'est possible ici.
+function mergeFolderInto(sourceId, targetId){
+  decksInFolder(sourceId).forEach(d => { d.folderId = targetId; });
+  childFolders(sourceId).forEach(sub => { sub.parentId = targetId; });
+  delete folders[sourceId];
+  persistDecks(); persistFolders();
 }
+document.getElementById('doFolderMerge').addEventListener('click', () => {
+  const sourceId = document.getElementById('folderMergeTarget').value;
+  if(!sourceId || !editingFolderId) return;
+  const sourceName = folders[sourceId].name;
+  const targetName = folders[editingFolderId].name;
+  if(!confirm(`Fusionner « ${sourceName} » dans « ${targetName} » ? Ses paquets et sous-dossiers rejoignent « ${targetName} », puis « ${sourceName} » est supprimé. Irréversible.`)) return;
+  mergeFolderInto(sourceId, editingFolderId);
+  modalFolderEdit.classList.add('hidden');
+  renderHome();
+  showToast('Dossiers fusionnés');
+});
 function deleteFolder(folderId){
   const f = folders[folderId];
   if(!f) return;
@@ -1436,6 +1538,11 @@ function renderStudyCard(){
   document.getElementById('studyProgress').textContent = `${studyIndex+1} / ${studyQueue.length}`;
   document.getElementById('cardFrontText').innerHTML = frontHTML;
   document.getElementById('cardBackText').innerHTML = backHTML;
+  // Le paquet d'appartenance n'est affiché que lorsqu'on révise PLUSIEURS paquets à la fois
+  // (studyScopeDeckId est alors null) — inutile de le répéter quand on révise un seul paquet.
+  const deckTag = (!studyScopeDeckId && decks[card.deckId]) ? ' · ' + decks[card.deckId].name : '';
+  document.getElementById('faceLabelFront').textContent = 'Question' + deckTag;
+  document.getElementById('faceLabelBack').textContent = 'Réponse' + deckTag;
   document.getElementById('cardStampFront').innerHTML = buildMasteryStampSVG((card.interval ? masteryPct(card) : 0), 'mastery-' + item.cardId);
   document.getElementById('cardImportantStampFront').innerHTML = card.important ? buildImportantStampSVG('imp-front-' + item.cardId) : '';
   document.getElementById('cardImportantStampFront').classList.toggle('hidden', !card.important);
@@ -1736,17 +1843,69 @@ document.getElementById('saveDeck').addEventListener('click', () => {
   showToast('Paquet créé');
 });
 
+const modalDeckEdit = document.getElementById('modalDeckEdit');
+function populateDeckMergeSelect(){
+  const sel = document.getElementById('deckMergeTarget');
+  sel.innerHTML = '';
+  const others = Object.values(decks).filter(d => d.id !== currentDeckId);
+  if(others.length === 0){
+    sel.innerHTML = '<option value="">Aucun autre paquet</option>';
+    sel.disabled = true;
+    return;
+  }
+  sel.disabled = false;
+  others.sort((a,b)=>a.name.localeCompare(b.name,'fr')).forEach(d => {
+    const opt = document.createElement('option');
+    opt.value = d.id; opt.textContent = d.name;
+    sel.appendChild(opt);
+  });
+}
 document.getElementById('deckRenameBtn').addEventListener('click', () => {
   const deck = decks[currentDeckId];
   if(!deck) return;
-  const name = prompt('Renommer le paquet :', deck.name);
-  if(name === null) return;
-  const trimmed = name.trim();
-  if(!trimmed) return;
-  deck.name = trimmed;
+  document.getElementById('deckEditName').value = deck.name;
+  populateDeckMergeSelect();
+  modalDeckEdit.classList.remove('hidden');
+});
+document.getElementById('cancelDeckEdit').addEventListener('click', () => modalDeckEdit.classList.add('hidden'));
+modalDeckEdit.addEventListener('click', (e) => { if(e.target === modalDeckEdit) modalDeckEdit.classList.add('hidden'); });
+document.getElementById('saveDeckEdit').addEventListener('click', () => {
+  const deck = decks[currentDeckId];
+  if(!deck) return;
+  const name = document.getElementById('deckEditName').value.trim();
+  if(!name) return;
+  deck.name = name;
   persistDecks();
   renderDeck();
+  modalDeckEdit.classList.add('hidden');
   showToast('Paquet renommé');
+});
+// Déplace toutes les cartes du paquet source vers le paquet actuel, additionne leur historique
+// d'assiduité jour par jour (pour ne pas perdre les statistiques passées), puis supprime le
+// paquet source.
+function mergeDeckInto(sourceId, targetId){
+  cardsForDeck(sourceId).forEach(c => { c.deckId = targetId; });
+  Object.values(dailyStats).forEach(entry => {
+    if(entry.byDeck && entry.byDeck[sourceId]){
+      const src = entry.byDeck[sourceId];
+      if(!entry.byDeck[targetId]) entry.byDeck[targetId] = { reviews:0, totalCards:0, avgMastery:0 };
+      entry.byDeck[targetId].reviews = (entry.byDeck[targetId].reviews||0) + (src.reviews||0);
+      delete entry.byDeck[sourceId];
+    }
+  });
+  delete decks[sourceId];
+  persistCards(); persistDecks(); persistDaily();
+}
+document.getElementById('doDeckMerge').addEventListener('click', () => {
+  const sourceId = document.getElementById('deckMergeTarget').value;
+  if(!sourceId) return;
+  const sourceName = decks[sourceId].name;
+  const targetName = decks[currentDeckId].name;
+  if(!confirm(`Fusionner « ${sourceName} » dans « ${targetName} » ? Toutes les cartes de « ${sourceName} » rejoignent « ${targetName} », puis « ${sourceName} » est supprimé. Irréversible.`)) return;
+  mergeDeckInto(sourceId, currentDeckId);
+  modalDeckEdit.classList.add('hidden');
+  renderDeck();
+  showToast('Paquets fusionnés');
 });
 
 document.getElementById('deckDeleteBtn').addEventListener('click', () => {
@@ -2080,6 +2239,50 @@ function renderStatsFor(scope){
 
 /* ================= note derrière l'étoile ================= */
 const LS_NOTE = 'fiches_note_v1';
+const DEFAULT_NOTE = `Veni, Sancte Spiritus,
+et emitte cælitus
+lucis tuæ radium.
+
+Veni, pater pauperum,
+veni, dator munerum
+veni, lumen cordium.
+
+Consolator optime,
+dulcis hospes animæ,
+dulce refrigerium.
+
+In labore requies,
+in æstu temperies
+in fletu solatium.
+
+O lux beatissima,
+reple cordis intima
+tuorum fidelium.
+
+Sine tuo numine,
+nihil est in homine,
+nihil est innoxium.
+
+Lava quod est sordidum,
+riga quod est aridum,
+sana quod est saucium.
+
+Flecte quod est rigidum,
+fove quod est frigidum,
+rege quod est devium.
+
+Da tuis fidelibus,
+in te confidentibus,
+sacrum septenarium.
+
+Da virtutis meritum,
+da salutis exitum,
+da perenne gaudium.`;
+// Ne sème le texte par défaut qu'une seule fois, si la clé n'existe pas DU TOUT (première
+// utilisation) — une note vidée volontairement ensuite (chaîne vide) n'est jamais réécrasée.
+if(localStorage.getItem(LS_NOTE) === null){
+  try{ localStorage.setItem(LS_NOTE, DEFAULT_NOTE); }catch(e){}
+}
 const modalNote = document.getElementById('modalNote');
 function openNoteModal(){
   const note = localStorage.getItem(LS_NOTE) || '';
