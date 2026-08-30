@@ -1,7 +1,7 @@
 {
-  "name": "en route vers l'ENS",
-  "short_name": "Fiches",
-  "description": "Fiches de révision à répétition espacée",
+  "name": "Mnémosyne — pour le vocabulaire aussi compliqué à apprendre que le nom de cette titanide",
+  "short_name": "Mnémosyne",
+  "description": "Mnémosyne — pour le vocabulaire aussi compliqué à apprendre que le nom de cette titanide",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
