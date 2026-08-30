@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Fiches — répétition espacée</title>
+<title>Mnémosyne — pour le vocabulaire aussi compliqué à apprendre que le nom de cette titanide</title>
 <meta name="theme-color" content="#3E3226">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/png" sizes="32x32" href="icon-32.png">
@@ -2329,7 +2329,7 @@ document.getElementById('saveNoteBtn').addEventListener('click', () => {
 // Ste Hildegarde de Bingen en 2021, Stes Marthe-Marie-Lazare en 2021, Ste Teresa de Calcutta en
 // 2025). Volontairement partielle : à la différence des calendriers "un saint par jour" (type
 // Nominis), le calendrier universel ne fixe pas de saint propre pour chaque jour de l'année — les
-// jours sans célébration retombent sur "✦ Fiches". Les fêtes mobiles calées sur Pâques (Baptême du
+// jours sans célébration retombent sur "St Cédric". Les fêtes mobiles calées sur Pâques (Baptême du
 // Seigneur, Sainte Trinité, Fête-Dieu, Christ-Roi, Sainte Famille, Marie Mère de l'Église...) ne
 // sont pas représentables dans une table à date fixe et sont donc omises.
 const SAINTS = {
@@ -2703,7 +2703,7 @@ const SAINTS = {
 function saintOfDay(){
   const d = new Date();
   const key = String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
-  return SAINTS[key] || '✦ Fiches';
+  return SAINTS[key] || 'St Cédric';
 }
 
 /* ================= service worker ================= */if('serviceWorker' in navigator){
