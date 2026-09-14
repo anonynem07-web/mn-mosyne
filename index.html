@@ -213,6 +213,8 @@ main{flex:1;padding:6px 18px calc(24px + var(--safe-bottom)) 18px;overflow-y:aut
   position:relative;z-index:1;overflow-y:auto;flex:1;
   background-image:repeating-linear-gradient(to bottom, transparent 0, transparent 26px, var(--line-blue) 26px, var(--line-blue) 27.5px, transparent 27.5px, transparent 28px);
   background-attachment:local;
+  -webkit-overflow-scrolling:touch;
+  touch-action:pan-y;
 }
 .face .face-text .def-line{line-height:28px;margin:0;}
 .face .face-text .def-line.secondary{opacity:.6;font-size:.8em;font-weight:400;}
@@ -326,6 +328,8 @@ main{flex:1;padding:6px 18px calc(24px + var(--safe-bottom)) 18px;overflow-y:aut
   z-index:60;opacity:0;pointer-events:none;transition:opacity .25s;
 }
 .toast.show{opacity:1;}
+
+.folder-header.dragging-item{box-shadow:0 8px 18px rgba(0,0,0,.45);background:rgba(251,246,234,.16);}
 </style>
 </head>
 <body>
@@ -380,6 +384,7 @@ main{flex:1;padding:6px 18px calc(24px + var(--safe-bottom)) 18px;overflow-y:aut
           <option value="lastAnswer">Dernière réponse</option>
           <option value="important">Importance</option>
           <option value="alpha">Ordre alphabétique</option>
+          <option value="chrono">Ordre chronologique</option>
         </select>
       </div>
       <div class="deck-actions">
@@ -395,6 +400,9 @@ main{flex:1;padding:6px 18px calc(24px + var(--safe-bottom)) 18px;overflow-y:aut
       <div id="cardList"></div>
       <div class="empty-state hidden" id="deckEmpty">
         <p>Ce paquet est vide.<br>Ajoutez une carte ou importez une liste.</p>
+      </div>
+      <div class="deck-actions" style="margin-top:18px;">
+        <button class="btn full" id="deckExcludeBtn">Exclure des révisions groupées</button>
       </div>
     </main>
   </section>
@@ -595,8 +603,8 @@ main{flex:1;padding:6px 18px calc(24px + var(--safe-bottom)) 18px;overflow-y:aut
 
     <div class="field">
       <label>Options</label>
-      <label class="check-opt"><input type="checkbox" id="reviewForce"><span class="cname">Forcer (même les cartes pas encore dues)</span></label>
-      <label class="check-opt"><input type="checkbox" id="reviewShuffle"><span class="cname">Ordre aléatoire des cartes</span></label>
+      <label class="check-opt"><input type="checkbox" id="reviewForce"><span class="cname">Forcer la révision des cartes non dues</span></label>
+      <label class="check-opt"><input type="checkbox" id="reviewShuffle"><span class="cname">Ordre aléatoire</span></label>
       <label class="check-opt"><input type="checkbox" id="reviewImportantOnly"><span class="cname">Uniquement les cartes importantes</span></label>
     </div>
 
@@ -661,7 +669,7 @@ main{flex:1;padding:6px 18px calc(24px + var(--safe-bottom)) 18px;overflow-y:aut
     <div class="field" style="margin-top:6px;">
       <label for="folderMergeTarget">Fusionner avec un autre dossier</label>
       <select id="folderMergeTarget"></select>
-      <p class="hint">Tous les paquets et sous-dossiers du dossier choisi rejoignent celui-ci ; le dossier choisi est ensuite supprimé. Irréversible.</p>
+      <p class="hint">Tous les paquets et sous-dossiers du dossier choisi rejoignent celui-ci ; le dossier choisi est ensuite supprimé. Action irréversible.</p>
     </div>
     <div class="modal-actions">
       <button class="btn danger full" id="doFolderMerge">Fusionner</button>
@@ -678,6 +686,7 @@ const LS_CARDS = 'fiches_cards_v1';
 const LS_FOLDERS = 'fiches_folders_v1';
 const LS_PREF_DIR = 'fiches_pref_direction_v2';
 const LS_PREF_SHUFFLE = 'fiches_pref_shuffle_v1';
+const LS_PREF_BY_SCOPE = 'fiches_pref_by_scope_v1';
 const LS_DAILY = 'fiches_daily_stats_v1';
 
 function loadJSON(key, fallback){ try{ const r = localStorage.getItem(key); return r ? JSON.parse(r) : fallback; }catch(e){ return fallback; } }
@@ -687,11 +696,13 @@ let decks = loadJSON(LS_DECKS, {});     // { id: {id, name, folderId, createdAt}
 let cards = loadJSON(LS_CARDS, {});     // { id: {id, deckId, front, back, interval, repetition, ease, due, important, lastQuality, lastAnsweredAt, createdAt} }
 let folders = loadJSON(LS_FOLDERS, {}); // { id: {id, name, createdAt} }
 let dailyStats = loadJSON(LS_DAILY, {}); // { 'YYYY-MM-DD': {reviews, totalCards, avgMastery} }
+let prefsByScope = loadJSON(LS_PREF_BY_SCOPE, {}); // { 'home' | 'deck:ID' | 'folder:ID': {fb,bf,shuffle,importantOnly} }
 
 function persistDecks(){ saveJSON(LS_DECKS, decks); }
 function persistCards(){ saveJSON(LS_CARDS, cards); snapshotToday(); }
 function persistFolders(){ saveJSON(LS_FOLDERS, folders); }
 function persistDaily(){ saveJSON(LS_DAILY, dailyStats); }
+function persistPrefsByScope(){ saveJSON(LS_PREF_BY_SCOPE, prefsByScope); }
 
 function makeId(prefix){ return prefix + '_' + Date.now() + '_' + Math.random().toString(36).slice(2,7); }
 
@@ -737,11 +748,13 @@ function daysBetween(a, b){ // b - a en jours (chaînes 'YYYY-MM-DD'); positif s
 // semaine après : sans ce correctif, l'algorithme récompenserait autant les deux, et les
 // intervalles grossiraient artificiellement vite en cas de révisions répétées en avance.
 const EARLY_PENALTY_MAX = 0.35; // jusqu'à -35% d'intervalle si révisée dès le lendemain de la précédente révision
-// Correctif : distinction immédiate entre "difficile", "assez facile" et "facile". Auparavant,
-// ces trois notes produisaient exactement le même intervalle immédiat (seul le facteur de
-// facilité, qui n'influence que les révisions futures, différait) ; on applique désormais un
-// multiplicateur immédiat sur l'intervalle calculé, en plus de l'ajustement du facteur de facilité.
-const QUALITY_INTERVAL_MULTIPLIER = { 3: 0.85, 4: 1.0, 5: 1.2 };
+// Correctif : distinction immédiate entre "difficile", "assez facile" et "facile", avec un écart
+// plus marqué entre "difficile" (PA) et "assez facile" (AA) qu'entre "assez facile" (AA) et
+// "facile" (LA) — PA doit être nettement pénalisé (rester proche de la sanction de NA), tandis
+// que l'écart AA→LA reste plus modéré. On applique un multiplicateur immédiat sur l'intervalle
+// calculé, en plus de l'ajustement du facteur de facilité (qui n'influence que les révisions
+// futures).
+const QUALITY_INTERVAL_MULTIPLIER = { 3: 0.22, 4: 1.0, 5: 1.3 };
 function scheduleCard(card, quality){
   const next = { ...card };
   const today = todayStr();
@@ -998,7 +1011,7 @@ let studyIndex = 0;
 let studyScopeDeckId = null; // paquet unique en cours de révision, ou null si multi-dossiers
 let cardRevealed = false;
 let studyHistory = []; // pile des révisions récentes, pour "revenir en arrière" : {cardId, deckId, prevCardState, queueIndex}
-let deckSortMode = 'created'; // 'created' | 'lastAnswer' — état d'affichage du paquet ouvert
+let deckSortMode = 'created'; // 'created' | 'lastAnswer' | 'important' | 'alpha' | 'chrono' — état d'affichage du paquet ouvert
 
 function showView(name){
   Object.values(views).forEach(v => v.classList.add('hidden'));
@@ -1015,8 +1028,11 @@ function dueCardsForDeck(deckId){
 function decksInFolder(folderId){
   return Object.values(decks).filter(d => (d.folderId || null) === folderId);
 }
+// Utilisé pour les comptes GROUPÉS (accueil, statistiques globales) : les paquets durablement
+// exclus des révisions groupées (voir excludedFromReviews) n'y contribuent pas. Le détail d'un
+// paquet ouvert directement, lui, continue d'utiliser dueCardsForDeck() sans ce filtre.
 function allDueCards(){
-  return Object.values(cards).filter(isDue);
+  return Object.values(cards).filter(c => isDue(c) && !(decks[c.deckId] && decks[c.deckId].excludedFromReviews));
 }
 // Tri générique par champ "order" (réorganisation manuelle), avec repli sur createdAt
 // pour les éléments qui n'ont pas encore de valeur "order" (créés avant cette fonctionnalité).
@@ -1032,12 +1048,6 @@ function moveItem(arr, id, dir){
   const bo = b.order !== undefined ? b.order : b.createdAt;
   a.order = bo; b.order = ao;
   return true;
-}
-function moveFolder(folderId, dir){
-  const f = folders[folderId];
-  if(!f) return;
-  const siblings = sortByOrder(childFolders(f.parentId || null));
-  if(moveItem(siblings, folderId, dir)){ persistFolders(); renderHome(); }
 }
 function moveDeck(deckId, dir){
   const deck = decks[deckId];
@@ -1070,7 +1080,7 @@ function getFolderBuckets(){
     buckets.push({ id: null, name: 'Sans dossier', deckIds: orphanDecks.map(d=>d.id) });
   }
   buckets.forEach(b => {
-    b.due = b.deckIds.reduce((sum, id) => sum + dueCardsForDeck(id).length, 0);
+    b.due = filterExcludedDecks(b.deckIds).reduce((sum, id) => sum + dueCardsForDeck(id).length, 0);
     b.total = b.deckIds.reduce((sum, id) => sum + cardsForDeck(id).length, 0);
   });
   return buckets;
@@ -1081,6 +1091,12 @@ function scopeDeckIds(scope){
   if(scope.type === 'folder') return deckIdsInFolderTree(scope.id);
   if(scope.type === 'deck') return [scope.id];
   return Object.keys(decks);
+}
+// Exclut les paquets marqués comme durablement exclus des révisions groupées (accueil / dossier).
+// La révision d'un paquet ouvert explicitement (bouton "Réviser" dans le détail du paquet)
+// n'est jamais affectée par ce filtre.
+function filterExcludedDecks(deckIds){
+  return deckIds.filter(id => !(decks[id] && decks[id].excludedFromReviews));
 }
 
 /* ================= rendu : accueil ================= */
@@ -1111,11 +1127,12 @@ function renderHome(){
 function renderFolderTree(parentId, container){
   sortByOrder(childFolders(parentId)).forEach(folder => {
     const treeDeckIds = deckIdsInFolderTree(folder.id);
-    const due = treeDeckIds.reduce((s,id)=> s + dueCardsForDeck(id).length, 0);
+    const due = filterExcludedDecks(treeDeckIds).reduce((s,id)=> s + dueCardsForDeck(id).length, 0);
     const total = treeDeckIds.reduce((s,id)=> s + cardsForDeck(id).length, 0);
 
     const group = document.createElement('div');
     group.className = 'folder-group';
+    group.dataset.folderId = folder.id;
     const header = document.createElement('div');
     header.className = 'folder-header';
     const collapsed = !!folder.collapsed;
@@ -1125,10 +1142,6 @@ function renderFolderTree(parentId, container){
       <span class="due-badge ${due===0?'zero':''}">${due}</span>
       <button class="fbtn" data-act="stats" title="Statistiques">☙</button>
       <button class="fbtn" data-act="rename" title="Renommer">✎</button>
-      <span class="order-pair">
-        <button class="fbtn" data-act="up" title="Monter">ꜛ</button>
-        <button class="fbtn" data-act="down" title="Descendre">ꜜ</button>
-      </span>
       <button class="fbtn" data-act="del" title="Supprimer">✕</button>
     `;
     const body = document.createElement('div');
@@ -1143,13 +1156,12 @@ function renderFolderTree(parentId, container){
     });
     header.querySelector('[data-act="stats"]').addEventListener('click', (e) => { e.stopPropagation(); openStats({type:'folder', id: folder.id}, {view:'home'}); });
     header.querySelector('[data-act="rename"]').addEventListener('click', (e)=>{ e.stopPropagation(); renameFolder(folder.id); });
-    header.querySelector('[data-act="up"]').addEventListener('click', (e)=>{ e.stopPropagation(); moveFolder(folder.id, -1); });
-    header.querySelector('[data-act="down"]').addEventListener('click', (e)=>{ e.stopPropagation(); moveFolder(folder.id, 1); });
     header.querySelector('[data-act="del"]').addEventListener('click', (e)=>{ e.stopPropagation(); deleteFolder(folder.id); });
     header.addEventListener('click', () => {
       if(total === 0) return;
       openReviewModal('folder', folder.id);
     });
+    attachLongPressReorder(header, folder);
     group.appendChild(header);
 
     renderFolderTree(folder.id, body); // sous-dossiers d'abord
@@ -1160,6 +1172,99 @@ function renderFolderTree(parentId, container){
   });
 }
 
+// Réorganisation des dossiers (au sein d'un même parent) par appui prolongé, au lieu de flèches
+// haut/bas — cela libère de la place dans l'en-tête pour le nom du dossier.
+function attachLongPressReorder(headerEl, folder){
+  const LONG_PRESS_MS = 480, MOVE_CANCEL_PX = 10;
+  let pressTimer = null;
+  let moveCancelHandler = null, upCancelHandler = null;
+
+  function cancelPress(){
+    clearTimeout(pressTimer); pressTimer = null;
+    if(moveCancelHandler) document.removeEventListener('pointermove', moveCancelHandler);
+    if(upCancelHandler) document.removeEventListener('pointerup', upCancelHandler);
+    moveCancelHandler = null; upCancelHandler = null;
+  }
+
+  headerEl.addEventListener('pointerdown', (e) => {
+    if(e.target.closest('button')) return; // ne pas déclencher depuis les boutons d'action
+    if(e.pointerType === 'mouse' && e.button !== 0) return;
+    const startX = e.clientX, startY = e.clientY;
+    cancelPress();
+    pressTimer = setTimeout(() => { cancelPress(); beginFolderDrag(headerEl, folder, e); }, LONG_PRESS_MS);
+    moveCancelHandler = (ev) => {
+      if(Math.abs(ev.clientX-startX) > MOVE_CANCEL_PX || Math.abs(ev.clientY-startY) > MOVE_CANCEL_PX){
+        cancelPress();
+      }
+    };
+    upCancelHandler = () => cancelPress();
+    document.addEventListener('pointermove', moveCancelHandler);
+    document.addEventListener('pointerup', upCancelHandler);
+  });
+}
+function beginFolderDrag(headerEl, folder, startEvent){
+  const group = headerEl.closest('.folder-group');
+  const containerEl = group.parentElement;
+  if(!containerEl) return;
+  if(navigator.vibrate) navigator.vibrate(8);
+  group.classList.add('dragging-item');
+  group.style.position = 'relative';
+  group.style.zIndex = '10';
+  group.style.pointerEvents = 'none';
+  let refY = startEvent.clientY;
+
+  function siblingGroups(){
+    return Array.from(containerEl.children).filter(c => c.classList.contains('folder-group'));
+  }
+
+  function onMove(ev){
+    const dy = ev.clientY - refY;
+    group.style.transform = `translateY(${dy}px)`;
+    const groupRect = group.getBoundingClientRect();
+    const centerY = groupRect.top + groupRect.height/2;
+    const siblings = siblingGroups();
+    const idx = siblings.indexOf(group);
+    if(idx > 0){
+      const prev = siblings[idx-1];
+      const prevRect = prev.getBoundingClientRect();
+      if(centerY < prevRect.top + prevRect.height/2){
+        containerEl.insertBefore(group, prev);
+        refY += prevRect.height;
+        group.style.transform = 'translateY(0px)';
+        return;
+      }
+    }
+    if(idx < siblings.length-1 && idx >= 0){
+      const next = siblings[idx+1];
+      const nextRect = next.getBoundingClientRect();
+      if(centerY > nextRect.top + nextRect.height/2){
+        containerEl.insertBefore(group, next.nextSibling);
+        refY -= nextRect.height;
+        group.style.transform = 'translateY(0px)';
+        return;
+      }
+    }
+  }
+  function onUp(){
+    document.removeEventListener('pointermove', onMove);
+    document.removeEventListener('pointerup', onUp);
+    group.classList.remove('dragging-item');
+    group.style.transform = '';
+    group.style.position = '';
+    group.style.zIndex = '';
+    group.style.pointerEvents = '';
+    const finalOrder = siblingGroups();
+    finalOrder.forEach((el, i) => {
+      const fid = el.dataset.folderId;
+      if(folders[fid]) folders[fid].order = i;
+    });
+    persistFolders();
+    renderHome();
+  }
+  document.addEventListener('pointermove', onMove);
+  document.addEventListener('pointerup', onUp);
+}
+
 function renderDeckRow(deck){
   const total = cardsForDeck(deck.id).length;
   const due = dueCardsForDeck(deck.id).length;
@@ -1168,7 +1273,7 @@ function renderDeckRow(deck){
   row.className = 'deck-row';
   row.innerHTML = `
     <div class="info">
-      <p class="name">${escapeHTML(deck.name)}</p>
+      <p class="name">${escapeHTML(deck.name)}${deck.excludedFromReviews ? ' <span style="opacity:.55;font-size:12px;">(exclu)</span>' : ''}</p>
       <p class="meta">${total} carte${total>1?'s':''}${mastery!==null ? ' · ' + mastery + '% maîtrisé' : ''}</p>
     </div>
     <span class="due-badge ${due===0?'zero':''}">${due}</span>
@@ -1244,6 +1349,145 @@ function lastAnswerRank(card){
     ? order[card.lastQuality] : 99;
 }
 
+/* ================= tri chronologique des cartes ================= */
+// Reconnaît une grande variété de notations de date (françaises) dans le texte d'une carte, et
+// renvoie une valeur numérique comparable (année, avec fraction pour le mois/jour), ou null si
+// aucune date n'a pu être reconnue. Voir les commentaires ci-dessous pour le détail des formats.
+const ROMAN_MAP = {I:1,V:5,X:10,L:50,C:100,D:500,M:1000};
+function romanToInt(s){
+  if(!s) return null;
+  s = s.toUpperCase();
+  let total = 0, prev = 0;
+  for(let i = s.length-1; i>=0; i--){
+    const val = ROMAN_MAP[s[i]];
+    if(!val) return null;
+    if(val < prev) total -= val; else { total += val; prev = val; }
+  }
+  return total > 0 ? total : null;
+}
+const FR_MONTHS = {
+  'janv':1,'janvier':1,'fev':2,'fév':2,'fevr':2,'févr':2,'fevrier':2,'février':2,
+  'mars':3,'avr':4,'avril':4,'mai':5,'juin':6,'juil':7,'juillet':7,
+  'aout':8,'août':8,'sept':9,'septembre':9,'oct':10,'octobre':10,
+  'nov':11,'novembre':11,'dec':12,'déc':12,'decembre':12,'décembre':12
+};
+const SEASON_FIRST_MONTH = { 'printemps':3, 'ete':6, 'été':6, 'automne':9, 'hiver':12 };
+function yearMonthDayValue(year, month, day){
+  month = month || 1; day = day || 1;
+  return year + (month-1)/12 + (day-1)/365;
+}
+function parseChronoValue(rawText){
+  if(!rawText) return null;
+  // on retire la mise en forme markup et les retours à la ligne volontaires ("\") pour ne
+  // garder que le texte utile à l'analyse
+  let text = String(rawText).replace(/\*\*|__|_/g,' ').replace(/\\/g,' ').toLowerCase();
+
+  // plage approximative "entre X et Y" (le préfixe vers/environ/~ ne change pas le calcul)
+  let m = text.match(/entre\s+(-?\d{1,4})\s+et\s+(-?\d{1,4})/);
+  if(m) return (parseInt(m[1],10) + parseInt(m[2],10)) / 2;
+
+  // JJ/MM/AAAA
+  m = text.match(/\b(\d{1,2})\/(\d{1,2})\/(-?\d{1,4})(?!\d)/);
+  if(m){
+    const day = parseInt(m[1],10), month = parseInt(m[2],10), year = parseInt(m[3],10);
+    if(day>=1 && day<=31 && month>=1 && month<=12) return yearMonthDayValue(year, month, day);
+  }
+
+  // MM/AAAA
+  m = text.match(/\b(\d{1,2})\/(-?\d{3,4})(?!\d)/);
+  if(m){
+    const month = parseInt(m[1],10), year = parseInt(m[2],10);
+    if(month>=1 && month<=12) return yearMonthDayValue(year, month);
+  }
+
+  // décennie : "(début/milieu/fin) des années 1980"
+  m = text.match(/(debut|début|milieu|fin)?\s*(?:des\s+)?ann[ée]es\s+(-?\d{3,4})(?!\d)/);
+  if(m){
+    const base = parseInt(m[2],10);
+    const mod = m[1];
+    if(mod){
+      if(mod.match(/^(deb|déb)/)) return base + 2;
+      if(mod === 'milieu') return base + 5;
+      if(mod === 'fin') return base + 8;
+    }
+    return base + 5;
+  }
+  // décennie : "1980s" — le "-" éventuel ne doit pas être "avalé" par une frontière de mot mal
+  // placée (voir note plus bas au sujet de la paire incertaine "X/Y" pour la même subtilité).
+  m = text.match(/(?<!\d)(-?\d{3,4})s\b/);
+  if(m) return parseInt(m[1],10) + 5;
+
+  // siècle en chiffres romains, ex. "XIXe siècle", "fin du XVe s.", ou juste "XIX"
+  {
+    // Remarque : aucun \b n'est placé juste après le groupe de chiffres romains, car il serait
+    // suivi la plupart du temps par la lettre "e" (ex. "XIXe") — deux caractères "mots" côte à
+    // côte ne forment jamais une frontière \b, ce qui ferait systématiquement échouer le motif.
+    let cm = text.match(/(debut|début|milieu|fin)?\s*(?:du\s+|de\s+la\s+|d['’]\s*)?(-?)\b([ivxlcdm]{2,7})e?\.?\s*(?:s\.|siecle|siècle)/);
+    if(!cm){
+      // repli : le champ entier n'est que le chiffre romain (avec modificateur éventuel), sans
+      // le mot "siècle" — n'accepté qu'en correspondance stricte de tout le champ, pour éviter
+      // de confondre un mot ordinaire écrit uniquement avec des lettres romaines (ex. "il").
+      cm = text.trim().match(/^(debut|début|milieu|fin)?\s*(-?)\s*([ivxlcdm]{1,7})\s*e?\.?$/);
+    }
+    if(cm){
+      const roman = romanToInt(cm[3]);
+      if(roman && roman>0 && roman<=40){
+        const negative = cm[2] === '-';
+        let val = (roman-1)*100 + 50;
+        const mod = cm[1];
+        if(mod){
+          if(mod.match(/^(deb|déb)/)) val = (roman-1)*100 + 10;
+          else if(mod === 'milieu') val = (roman-1)*100 + 50;
+          else if(mod === 'fin') val = (roman-1)*100 + 90;
+        }
+        return negative ? -val : val;
+      }
+    }
+  }
+
+  // saison + année (le 1er mois de la saison sert de repère : printemps→mars, été→juin,
+  // automne→septembre, hiver→décembre)
+  m = text.match(/(printemps|ete|été|automne|hiver)\s+(-?\d{1,4})(?!\d)/);
+  if(m){
+    const month = SEASON_FIRST_MONTH[m[1]];
+    const year = parseInt(m[2],10);
+    if(month) return yearMonthDayValue(year, month);
+  }
+
+  // nom de mois, avec jour optionnel avant, ex. "juin 1290", "23 mars -44"
+  {
+    const monthNamesPattern = Object.keys(FR_MONTHS).sort((a,b)=>b.length-a.length).join('|');
+    const monthRe = new RegExp('\\b(\\d{1,2}\\s+)?(' + monthNamesPattern + ')\\.?\\s+(-?\\d{1,4})(?!\\d)');
+    const mm = text.match(monthRe);
+    if(mm){
+      const day = mm[1] ? parseInt(mm[1],10) : null;
+      const month = FR_MONTHS[mm[2]];
+      const year = parseInt(mm[3],10);
+      if(month) return yearMonthDayValue(year, month, day);
+    }
+  }
+
+  // date incertaine entre deux valeurs séparées par "/", ex. "-479/-478" : on utilise une
+  // vérification "non précédé d'un chiffre" plutôt qu'un \b, car \b juste avant un "-" optionnel
+  // échoue à la frontière (un "-" n'est pas un caractère "mot"), ce qui ferait perdre le signe
+  // négatif et fausserait complètement le calcul de la moyenne.
+  m = text.match(/(?<!\d)(-?\d{1,4})\/(-?\d{1,4})(?!\d)/);
+  if(m) return (parseInt(m[1],10) + parseInt(m[2],10)) / 2;
+
+  // année seule (positive ou négative pour avant J.-C.) — même remarque que ci-dessus au sujet
+  // du signe négatif.
+  m = text.match(/(?<!\d)(-?\d{1,4})(?!\d)/);
+  if(m) return parseInt(m[1],10);
+
+  return null;
+}
+// Cherche une date d'abord dans le recto, puis dans le verso si rien n'a été trouvé.
+function extractCardDate(card){
+  let v = parseChronoValue(card.front);
+  if(v === null) v = parseChronoValue(card.back);
+  return v;
+}
+
 document.getElementById('deckSortSelect').addEventListener('change', (e) => {
   deckSortMode = e.target.value;
   renderDeck();
@@ -1262,6 +1506,9 @@ function renderDeck(){
 
   populateFolderSelect(document.getElementById('deckFolderSelect'), deck.folderId || null);
 
+  const excludeBtn = document.getElementById('deckExcludeBtn');
+  excludeBtn.textContent = deck.excludedFromReviews ? 'Réinclure dans les révisions groupées' : 'Exclure des révisions groupées';
+
   const list = document.getElementById('cardList');
   list.innerHTML = '';
   let arr = cardsForDeck(deck.id);
@@ -1271,6 +1518,14 @@ function renderDeck(){
     arr = arr.slice().sort((a,b) => (b.important?1:0) - (a.important?1:0) || b.createdAt - a.createdAt);
   } else if(deckSortMode === 'alpha'){
     arr = arr.slice().sort((a,b) => a.front.localeCompare(b.front, 'fr', { sensitivity:'base' }));
+  } else if(deckSortMode === 'chrono'){
+    arr = arr.slice().sort((a,b) => {
+      const da = extractCardDate(a), db = extractCardDate(b);
+      if(da === null && db === null) return b.createdAt - a.createdAt;
+      if(da === null) return 1;
+      if(db === null) return -1;
+      return da - db;
+    });
   } else {
     arr = arr.slice().sort((a,b)=> b.createdAt - a.createdAt);
   }
@@ -1315,6 +1570,15 @@ document.getElementById('deckFolderSelect').addEventListener('change', (e) => {
   deck.folderId = e.target.value || null;
   persistDecks();
   showToast('Dossier mis à jour');
+});
+
+document.getElementById('deckExcludeBtn').addEventListener('click', () => {
+  const deck = decks[currentDeckId];
+  if(!deck) return;
+  deck.excludedFromReviews = !deck.excludedFromReviews;
+  persistDecks();
+  renderDeck();
+  showToast(deck.excludedFromReviews ? 'Paquet exclu des révisions groupées' : 'Paquet réinclus dans les révisions groupées');
 });
 
 /* ================= dossiers : actions ================= */
@@ -1382,7 +1646,7 @@ document.getElementById('doFolderMerge').addEventListener('click', () => {
 function deleteFolder(folderId){
   const f = folders[folderId];
   if(!f) return;
-  if(!confirm(`Supprimer le dossier « ${f.name} » ? Les paquets qu'il contient seront conservés, sans dossier, et ses éventuels sous-dossiers deviendront des dossiers de premier niveau.`)) return;
+  if(!confirm(`Supprimer le dossier « ${f.name} » ? Les paquets qu'il contient seront conservés, sans dossier, et ses éventuels sous-dossier.`)) return;
   decksInFolder(folderId).forEach(d => { d.folderId = null; });
   childFolders(folderId).forEach(sub => { sub.parentId = null; });
   delete folders[folderId];
@@ -1610,24 +1874,41 @@ flipEl.addEventListener('click', () => {
   }
 });
 
-/* ---- glisser à gauche = NA, à droite = LA (une fois la réponse vue) ---- */
-let touchStartX = 0, touchDeltaX = 0, isDragging = false;
+/* ---- glisser à gauche = NA, à droite = LA (une fois la réponse vue) ----
+   La direction du geste n'est verrouillée qu'une fois le mouvement suffisamment marqué, et
+   seulement s'il est plus horizontal que vertical : cela permet de faire défiler le texte
+   d'une carte trop longue (geste vertical) sans déclencher accidentellement une notation. */
+let touchStartX = 0, touchStartY = 0, touchDeltaX = 0, isDragging = false;
+let dragDirectionLocked = false, isHorizontalDrag = false;
 const SWIPE_THRESHOLD = 90;
+const DRAG_LOCK_PX = 8;
 flipEl.addEventListener('touchstart', (e) => {
   if(!cardRevealed) return;
   touchStartX = e.touches[0].clientX;
+  touchStartY = e.touches[0].clientY;
   touchDeltaX = 0;
   isDragging = true;
+  dragDirectionLocked = false;
+  isHorizontalDrag = false;
 }, {passive:true});
 flipEl.addEventListener('touchmove', (e) => {
   if(!isDragging) return;
-  touchDeltaX = e.touches[0].clientX - touchStartX;
+  const dx = e.touches[0].clientX - touchStartX;
+  const dy = e.touches[0].clientY - touchStartY;
+  if(!dragDirectionLocked){
+    if(Math.abs(dx) < DRAG_LOCK_PX && Math.abs(dy) < DRAG_LOCK_PX) return;
+    dragDirectionLocked = true;
+    isHorizontalDrag = Math.abs(dx) > Math.abs(dy);
+  }
+  if(!isHorizontalDrag) return; // geste vertical : on laisse le défilement natif du texte agir
+  touchDeltaX = dx;
   flipEl.style.transition = 'none';
-  flipEl.style.transform = `translateX(${touchDeltaX}px) rotate(${touchDeltaX/18}deg)`;
+  flipEl.style.transform = `translateX(${dx}px) rotate(${dx/18}deg)`;
 }, {passive:true});
 flipEl.addEventListener('touchend', () => {
   if(!isDragging) return;
   isDragging = false;
+  if(!isHorizontalDrag){ flipEl.style.transform = ''; return; }
   flipEl.style.transition = '';
   if(touchDeltaX <= -SWIPE_THRESHOLD){
     suppressNextClick = true;
@@ -1686,6 +1967,15 @@ let reviewMode = null; // 'home' | 'deck' | 'folder'
 let reviewScopeId = null; // id du dossier, quand mode === 'folder'
 let reviewFolderSelection = new Set();
 
+// Clé de portée pour la mémorisation des réglages (sens, aléatoire, importantes uniquement) :
+// on mémorise séparément pour chaque paquet et chaque dossier précis, et pour "tout réviser"
+// depuis l'accueil — jamais un réglage global unique partagé entre tous.
+function currentPrefScopeKey(){
+  if(reviewMode === 'deck') return 'deck:' + currentDeckId;
+  if(reviewMode === 'folder') return 'folder:' + reviewScopeId;
+  return 'home';
+}
+
 function buildCheckRow(key, name, due){
   const row = document.createElement('label');
   row.className = 'check-opt';
@@ -1723,25 +2013,41 @@ function openReviewModal(mode, scopeId){
       wrap.appendChild(buildCheckRow(key, b.name, b.due));
     });
   } else if(mode === 'folder'){
-    foldersLabel.textContent = 'Listes à inclure';
-    const deckIds = deckIdsInFolderTree(scopeId); // inclut aussi les listes des sous-dossiers
-    reviewFolderSelection = new Set(deckIds);
-    dueForScope = deckIds.reduce((s,id)=>s+dueCardsForDeck(id).length,0);
-    deckIds
-      .map(id=>decks[id])
-      .sort((a,b)=>a.createdAt-b.createdAt)
-      .forEach(d => wrap.appendChild(buildCheckRow(d.id, d.name, dueCardsForDeck(d.id).length)));
+    // On propose ici les SOUS-dossiers directs du dossier révisé (et seulement ceux-là, pas
+    // les listes) : les paquets placés directement dans ce dossier sont, eux, toujours inclus
+    // (sauf exclusion durable individuelle, voir filterExcludedDecks).
+    foldersLabel.textContent = 'Sous-dossiers à inclure';
+    const directSubfolders = sortByOrder(childFolders(scopeId));
+    reviewFolderSelection = new Set(directSubfolders.map(f => f.id));
+    const directDeckIds = filterExcludedDecks(decksInFolder(scopeId).map(d=>d.id));
+    const allTreeDeckIds = filterExcludedDecks(deckIdsInFolderTree(scopeId));
+    dueForScope = allTreeDeckIds.reduce((s,id)=>s+dueCardsForDeck(id).length,0);
+    if(directSubfolders.length === 0){
+      wrap.innerHTML = '<p class="hint">Aucun sous-dossier : les paquets de ce dossier seront révisés directement.</p>';
+    } else {
+      directSubfolders.forEach(f => {
+        const subDeckIds = filterExcludedDecks(deckIdsInFolderTree(f.id));
+        const subDue = subDeckIds.reduce((s,id)=>s+dueCardsForDeck(id).length,0);
+        wrap.appendChild(buildCheckRow(f.id, f.name, subDue));
+      });
+    }
+    if(directDeckIds.length > 0){
+      const note = document.createElement('p');
+      note.className = 'hint';
+      note.textContent = `${directDeckIds.length} paquet${directDeckIds.length>1?'s':''} directement dans ce dossier.`;
+      wrap.appendChild(note);
+    }
   } else {
     dueForScope = dueCardsForDeck(currentDeckId).length;
   }
 
-  const savedDir = loadJSON(LS_PREF_DIR, { fb:true, bf:false });
-  document.getElementById('reviewDirFB').checked = savedDir.fb !== false;
-  document.getElementById('reviewDirBF').checked = !!savedDir.bf;
-  const savedShuffle = loadJSON(LS_PREF_SHUFFLE, true);
+  const scopeKey = currentPrefScopeKey();
+  const savedPrefs = prefsByScope[scopeKey] || {};
+  document.getElementById('reviewDirFB').checked = savedPrefs.fb !== undefined ? !!savedPrefs.fb : true;
+  document.getElementById('reviewDirBF').checked = savedPrefs.bf !== undefined ? !!savedPrefs.bf : false;
   document.getElementById('reviewForce').checked = dueForScope === 0;
-  document.getElementById('reviewShuffle').checked = savedShuffle !== false;
-  document.getElementById('reviewImportantOnly').checked = false;
+  document.getElementById('reviewShuffle').checked = savedPrefs.shuffle !== undefined ? !!savedPrefs.shuffle : true;
+  document.getElementById('reviewImportantOnly').checked = savedPrefs.importantOnly !== undefined ? !!savedPrefs.importantOnly : false;
 
   modalReview.classList.remove('hidden');
 }
@@ -1762,8 +2068,11 @@ document.getElementById('startReviewBtn').addEventListener('click', () => {
   const force = document.getElementById('reviewForce').checked;
   const shuffle = document.getElementById('reviewShuffle').checked;
   const importantOnly = document.getElementById('reviewImportantOnly').checked;
-  saveJSON(LS_PREF_DIR, directions);
-  saveJSON(LS_PREF_SHUFFLE, shuffle);
+
+  const scopeKey = currentPrefScopeKey();
+  prefsByScope[scopeKey] = { fb, bf, shuffle, importantOnly };
+  persistPrefsByScope();
+
   modalReview.classList.add('hidden');
 
   let ids, label, scopeDeckId;
@@ -1772,7 +2081,12 @@ document.getElementById('startReviewBtn').addEventListener('click', () => {
     label = decks[currentDeckId].name;
     scopeDeckId = currentDeckId;
   } else if(reviewMode === 'folder'){
-    const deckIds = Array.from(reviewFolderSelection);
+    // paquets directement dans ce dossier (toujours inclus, sauf exclusion durable) + paquets
+    // des sous-dossiers cochés
+    let deckIds = filterExcludedDecks(decksInFolder(reviewScopeId).map(d=>d.id));
+    Array.from(reviewFolderSelection).forEach(fid => {
+      deckIds = deckIds.concat(filterExcludedDecks(deckIdsInFolderTree(fid)));
+    });
     ids = cardIdsForScope(deckIds, force, importantOnly);
     label = (folders[reviewScopeId] && folders[reviewScopeId].name) || 'Révision';
     scopeDeckId = null;
@@ -1783,6 +2097,7 @@ document.getElementById('startReviewBtn').addEventListener('click', () => {
       const key = b.id === null ? 'none' : b.id;
       if(reviewFolderSelection.has(key)) deckIds = deckIds.concat(b.deckIds);
     });
+    deckIds = filterExcludedDecks(deckIds);
     ids = cardIdsForScope(deckIds, force, importantOnly);
     label = 'Révision';
     scopeDeckId = null;
@@ -2120,7 +2435,11 @@ function renderStatsFor(scope){
 
   const totalCardsCount = cardsInScope.length;
   const totalDecks = deckIds ? deckIds.length : Object.keys(decks).length;
-  const dueToday = deckIds ? deckIds.reduce((s,id)=>s+dueCardsForDeck(id).length,0) : allDueCards().length;
+  // "Dues aujourd'hui" exclut les paquets durablement exclus des révisions groupées lorsqu'on
+  // regarde un dossier (portée groupée) ou l'ensemble de la collection ; en revanche, consulter
+  // les statistiques d'un paquet précis affiche toujours son propre compte réel, exclusion ou pas.
+  const dueToday = !deckIds ? allDueCards().length
+    : (scope.type === 'deck' ? deckIds : filterExcludedDecks(deckIds)).reduce((s,id)=>s+dueCardsForDeck(id).length,0);
   const todayEntry = dailyStats[todayStr()];
   const reviewsToday = deckIds
     ? deckIds.reduce((s,id)=> s + ((todayEntry && todayEntry.byDeck && todayEntry.byDeck[id] && todayEntry.byDeck[id].reviews) || 0), 0)
