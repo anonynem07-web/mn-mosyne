@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Mnémosyne — pour le vocabulaire aussi compliqué à apprendre que le nom de cette titanide</title>
 <meta name="theme-color" content="#3E3226">
+<meta name="color-scheme" content="light">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/png" sizes="32x32" href="icon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -14,6 +15,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,500&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{
+  color-scheme:light; /* l'interface a son propre thème : on évite l'assombrissement automatique du navigateur */
   --walnut:#3E3226;
   --walnut-deep:#2C231A;
   --walnut-light:#57493A;
@@ -72,7 +74,7 @@ u{text-decoration:underline;text-decoration-color:var(--brass-deep);text-underli
 .topbar .icon-btn{background:none;border:none;color:var(--card);font-size:18px;padding:4px 6px;flex:none;opacity:.85;}
 .topbar .icon-btn:hover{opacity:1;color:var(--brass);}
 
-main{flex:1;padding:6px 18px calc(24px + var(--safe-bottom)) 18px;overflow-y:auto;}
+main{flex:1;scrollbar-gutter:stable;padding:6px 18px calc(24px + var(--safe-bottom)) 18px;overflow-y:auto;}
 
 /* ---------- home ---------- */
 .hero{padding:8px 4px 22px 4px;}
@@ -180,9 +182,11 @@ main{flex:1;padding:6px 18px calc(24px + var(--safe-bottom)) 18px;overflow-y:aut
 .star-toggle.active{color:var(--brass-deep);opacity:1;}
 
 /* ---------- study ---------- */
-.study-wrap{display:flex;flex-direction:column;align-items:center;padding-top:6px;}
+.study-wrap{display:flex;flex-direction:column;align-items:center;padding-top:6px;width:100%;}
+#studyCardArea{width:100%;max-width:340px;display:flex;flex-direction:column;align-items:center;}
+.study-wrap, #studyCardArea, .card-stage{min-width:0;}
 .study-progress{font-family:var(--font-mono);font-size:12.5px;color:rgba(251,246,234,.7);margin-bottom:18px;}
-.card-stage{position:relative;width:100%;max-width:340px;height:420px;margin-bottom:26px;touch-action:pan-y;}
+.card-stage{position:relative;width:100%;max-width:340px;flex:none;height:420px;margin-bottom:26px;touch-action:pan-y;}
 .stack-deco{position:absolute;inset:0;border-radius:14px;background:var(--card-shade);}
 .stack-deco.s2{transform:translateY(10px) scale(.97);opacity:.65;}
 .stack-deco.s1{transform:translateY(5px) scale(.985);opacity:.85;}
@@ -210,7 +214,7 @@ main{flex:1;padding:6px 18px calc(24px + var(--safe-bottom)) 18px;overflow-y:aut
 .face .face-label{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:14px;flex:none;}
 .face .face-text{
   font-family:var(--font-display);font-size:21px;line-height:28px;font-weight:500;
-  position:relative;z-index:1;overflow-y:auto;flex:1;
+  position:relative;z-index:1;overflow-y:auto;overflow-x:hidden;flex:1;min-width:0;overflow-wrap:anywhere;
   background-image:repeating-linear-gradient(to bottom, transparent 0, transparent 26px, var(--line-blue) 26px, var(--line-blue) 27.5px, transparent 27.5px, transparent 28px);
   background-attachment:local;
   -webkit-overflow-scrolling:touch;
@@ -329,7 +333,11 @@ main{flex:1;padding:6px 18px calc(24px + var(--safe-bottom)) 18px;overflow-y:aut
 }
 .toast.show{opacity:1;}
 
-.folder-header.dragging-item{box-shadow:0 8px 18px rgba(0,0,0,.45);background:rgba(251,246,234,.16);}
+.order-row{display:flex;align-items:center;gap:8px;background:rgba(251,246,234,.06);border-radius:8px;padding:6px 8px;margin-bottom:6px;}
+.order-row .oname{flex:1;min-width:0;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.order-row .obtn{background:rgba(251,246,234,.1);border:1px solid rgba(251,246,234,.25);color:var(--card);width:34px;height:30px;border-radius:6px;font-size:14px;line-height:1;}
+.order-row .obtn:hover:not(:disabled){border-color:var(--brass);color:var(--brass);}
+.order-row .obtn:disabled{opacity:.25;cursor:default;}
 </style>
 </head>
 <body>
@@ -357,6 +365,9 @@ main{flex:1;padding:6px 18px calc(24px + var(--safe-bottom)) 18px;overflow-y:aut
       <div id="deckList"></div>
       <div class="empty-state hidden" id="homeEmpty">
         <p>Aucun paquet pour l'instant.<br>Touchez « + » pour créer le premier.</p>
+      </div>
+      <div class="deck-actions" style="margin-top:40px;margin-bottom:80px;">
+        <button class="btn full" id="openSettingsBtn">⚙ Réglages</button>
       </div>
     </main>
     <button class="fab" id="addFab" aria-label="Créer">+</button>
@@ -599,6 +610,7 @@ main{flex:1;padding:6px 18px calc(24px + var(--safe-bottom)) 18px;overflow-y:aut
       <label>Sens de révision</label>
       <label class="check-opt"><input type="checkbox" id="reviewDirFB"><span class="cname">Terme → définition</span></label>
       <label class="check-opt"><input type="checkbox" id="reviewDirBF"><span class="cname">Définition → terme</span></label>
+      <label class="check-opt"><input type="checkbox" id="reviewDirStar"><span class="cname">★ importantes : définition → terme ; les autres : terme → définition</span></label>
     </div>
 
     <div class="field">
@@ -673,6 +685,21 @@ main{flex:1;padding:6px 18px calc(24px + var(--safe-bottom)) 18px;overflow-y:aut
     </div>
     <div class="modal-actions">
       <button class="btn danger full" id="doFolderMerge">Fusionner</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: réglages ===== -->
+<div class="modal-backdrop hidden" id="modalSettings">
+  <div class="modal">
+    <h3>Réglages</h3>
+    <div class="field">
+      <label>Ordre des dossiers et sous-dossiers</label>
+      <div id="folderOrderList"></div>
+      <p class="hint">Les flèches déplacent un dossier parmi ceux du même niveau (même dossier parent).</p>
+    </div>
+    <div class="modal-actions">
+      <button class="btn primary" id="closeSettings">Fermer</button>
     </div>
   </div>
 </div>
@@ -1055,6 +1082,12 @@ function moveDeck(deckId, dir){
   const siblings = sortByOrder(Object.values(decks).filter(d => (d.folderId||null) === (deck.folderId||null)));
   if(moveItem(siblings, deckId, dir)){ persistDecks(); renderHome(); }
 }
+function moveFolderOrder(folderId, dir){
+  const f = folders[folderId];
+  if(!f) return;
+  const siblings = sortByOrder(childFolders(f.parentId || null));
+  if(moveItem(siblings, folderId, dir)){ persistFolders(); renderHome(); }
+}
 // ---- sous-dossiers ----
 function childFolders(parentId){
   return Object.values(folders).filter(f => (f.parentId || null) === (parentId || null));
@@ -1132,7 +1165,6 @@ function renderFolderTree(parentId, container){
 
     const group = document.createElement('div');
     group.className = 'folder-group';
-    group.dataset.folderId = folder.id;
     const header = document.createElement('div');
     header.className = 'folder-header';
     const collapsed = !!folder.collapsed;
@@ -1161,7 +1193,6 @@ function renderFolderTree(parentId, container){
       if(total === 0) return;
       openReviewModal('folder', folder.id);
     });
-    attachLongPressReorder(header, folder);
     group.appendChild(header);
 
     renderFolderTree(folder.id, body); // sous-dossiers d'abord
@@ -1170,99 +1201,6 @@ function renderFolderTree(parentId, container){
     group.appendChild(body);
     container.appendChild(group);
   });
-}
-
-// Réorganisation des dossiers (au sein d'un même parent) par appui prolongé, au lieu de flèches
-// haut/bas — cela libère de la place dans l'en-tête pour le nom du dossier.
-function attachLongPressReorder(headerEl, folder){
-  const LONG_PRESS_MS = 480, MOVE_CANCEL_PX = 10;
-  let pressTimer = null;
-  let moveCancelHandler = null, upCancelHandler = null;
-
-  function cancelPress(){
-    clearTimeout(pressTimer); pressTimer = null;
-    if(moveCancelHandler) document.removeEventListener('pointermove', moveCancelHandler);
-    if(upCancelHandler) document.removeEventListener('pointerup', upCancelHandler);
-    moveCancelHandler = null; upCancelHandler = null;
-  }
-
-  headerEl.addEventListener('pointerdown', (e) => {
-    if(e.target.closest('button')) return; // ne pas déclencher depuis les boutons d'action
-    if(e.pointerType === 'mouse' && e.button !== 0) return;
-    const startX = e.clientX, startY = e.clientY;
-    cancelPress();
-    pressTimer = setTimeout(() => { cancelPress(); beginFolderDrag(headerEl, folder, e); }, LONG_PRESS_MS);
-    moveCancelHandler = (ev) => {
-      if(Math.abs(ev.clientX-startX) > MOVE_CANCEL_PX || Math.abs(ev.clientY-startY) > MOVE_CANCEL_PX){
-        cancelPress();
-      }
-    };
-    upCancelHandler = () => cancelPress();
-    document.addEventListener('pointermove', moveCancelHandler);
-    document.addEventListener('pointerup', upCancelHandler);
-  });
-}
-function beginFolderDrag(headerEl, folder, startEvent){
-  const group = headerEl.closest('.folder-group');
-  const containerEl = group.parentElement;
-  if(!containerEl) return;
-  if(navigator.vibrate) navigator.vibrate(8);
-  group.classList.add('dragging-item');
-  group.style.position = 'relative';
-  group.style.zIndex = '10';
-  group.style.pointerEvents = 'none';
-  let refY = startEvent.clientY;
-
-  function siblingGroups(){
-    return Array.from(containerEl.children).filter(c => c.classList.contains('folder-group'));
-  }
-
-  function onMove(ev){
-    const dy = ev.clientY - refY;
-    group.style.transform = `translateY(${dy}px)`;
-    const groupRect = group.getBoundingClientRect();
-    const centerY = groupRect.top + groupRect.height/2;
-    const siblings = siblingGroups();
-    const idx = siblings.indexOf(group);
-    if(idx > 0){
-      const prev = siblings[idx-1];
-      const prevRect = prev.getBoundingClientRect();
-      if(centerY < prevRect.top + prevRect.height/2){
-        containerEl.insertBefore(group, prev);
-        refY += prevRect.height;
-        group.style.transform = 'translateY(0px)';
-        return;
-      }
-    }
-    if(idx < siblings.length-1 && idx >= 0){
-      const next = siblings[idx+1];
-      const nextRect = next.getBoundingClientRect();
-      if(centerY > nextRect.top + nextRect.height/2){
-        containerEl.insertBefore(group, next.nextSibling);
-        refY -= nextRect.height;
-        group.style.transform = 'translateY(0px)';
-        return;
-      }
-    }
-  }
-  function onUp(){
-    document.removeEventListener('pointermove', onMove);
-    document.removeEventListener('pointerup', onUp);
-    group.classList.remove('dragging-item');
-    group.style.transform = '';
-    group.style.position = '';
-    group.style.zIndex = '';
-    group.style.pointerEvents = '';
-    const finalOrder = siblingGroups();
-    finalOrder.forEach((el, i) => {
-      const fid = el.dataset.folderId;
-      if(folders[fid]) folders[fid].order = i;
-    });
-    persistFolders();
-    renderHome();
-  }
-  document.addEventListener('pointermove', onMove);
-  document.addEventListener('pointerup', onUp);
 }
 
 function renderDeckRow(deck){
@@ -1488,6 +1426,29 @@ function extractCardDate(card){
   return v;
 }
 
+/* ================= tri alphabétique ================= */
+// Clé de tri : on ignore la mise en forme (**, _, __), les parenthèses ET leur contenu, les
+// guillemets, les "*", les mots-outils (der, die, das, sich, jn, jm, jdn, jdm, etw.) et tout
+// caractère qui n'est ni une lettre latine, ni une lettre grecque, ni un chiffre.
+const ALPHA_IGNORED_WORDS = new Set(['der','die','das','sich','jn','jm','jdn','jdm','etw']);
+function alphaKey(text){
+  let t = String(text || '');
+  t = t.replace(/\\/g, ' ');                       // séparateur de lignes de définition
+  t = t.replace(/\([^)]*\)?/g, ' ');               // (contenu entre parenthèses), même non fermé
+  t = t.replace(/\[[^\]]*\]?/g, ' ');             // [contenu entre crochets]
+  t = t.replace(/[*_]+/g, ' ');                     // marqueurs de mise en forme
+  t = t.replace(/[^\p{Script=Latin}\p{Script=Greek}\p{N}\s]/gu, ' '); // caractères spéciaux, guillemets, ponctuation
+  const words = t.toLowerCase().split(/\s+/).filter(w => w && !ALPHA_IGNORED_WORDS.has(w));
+  return words.join(' ');
+}
+function compareAlpha(a, b){
+  const ka = alphaKey(a), kb = alphaKey(b);
+  if(!ka && !kb) return 0;
+  if(!ka) return 1;   // rien d'exploitable : à la fin
+  if(!kb) return -1;
+  return ka.localeCompare(kb, 'fr', { sensitivity:'base', numeric:true });
+}
+
 document.getElementById('deckSortSelect').addEventListener('change', (e) => {
   deckSortMode = e.target.value;
   renderDeck();
@@ -1517,7 +1478,7 @@ function renderDeck(){
   } else if(deckSortMode === 'important'){
     arr = arr.slice().sort((a,b) => (b.important?1:0) - (a.important?1:0) || b.createdAt - a.createdAt);
   } else if(deckSortMode === 'alpha'){
-    arr = arr.slice().sort((a,b) => a.front.localeCompare(b.front, 'fr', { sensitivity:'base' }));
+    arr = arr.slice().sort((a,b) => compareAlpha(a.front, b.front));
   } else if(deckSortMode === 'chrono'){
     arr = arr.slice().sort((a,b) => {
       const da = extractCardDate(a), db = extractCardDate(b);
@@ -1756,7 +1717,9 @@ function buildStudyQueue(cardIds, directions, shuffle){
   const both = directions.fb && directions.bf;
   let arr = cardIds.map(id => ({
     cardId: id,
-    reversed: both ? (Math.random() < 0.5) : !!directions.bf
+    // sens "étoilées" : importantes en définition → terme, les autres en terme → définition
+    reversed: directions.star ? !!(cards[id] && cards[id].important)
+            : (both ? (Math.random() < 0.5) : !!directions.bf)
   }));
   if(shuffle){
     for(let i = arr.length - 1; i > 0; i--){
@@ -1966,6 +1929,7 @@ const modalReview = document.getElementById('modalReview');
 let reviewMode = null; // 'home' | 'deck' | 'folder'
 let reviewScopeId = null; // id du dossier, quand mode === 'folder'
 let reviewFolderSelection = new Set();
+let reviewFolderUsesDecks = false; // vrai si la modale propose des listes (dossier sans sous-dossier)
 
 // Clé de portée pour la mémorisation des réglages (sens, aléatoire, importantes uniquement) :
 // on mémorise séparément pour chaque paquet et chaque dossier précis, et pour "tout réviser"
@@ -1998,6 +1962,7 @@ function openReviewModal(mode, scopeId){
   const foldersLabel = document.getElementById('reviewFoldersLabel');
   foldersField.classList.toggle('hidden', mode === 'deck');
   reviewFolderSelection = new Set();
+  reviewFolderUsesDecks = false;
 
   let dueForScope = 0;
   const wrap = document.getElementById('reviewFolderChecks');
@@ -2013,29 +1978,33 @@ function openReviewModal(mode, scopeId){
       wrap.appendChild(buildCheckRow(key, b.name, b.due));
     });
   } else if(mode === 'folder'){
-    // On propose ici les SOUS-dossiers directs du dossier révisé (et seulement ceux-là, pas
-    // les listes) : les paquets placés directement dans ce dossier sont, eux, toujours inclus
-    // (sauf exclusion durable individuelle, voir filterExcludedDecks).
-    foldersLabel.textContent = 'Sous-dossiers à inclure';
+    // Dossier avec sous-dossiers : on propose les sous-dossiers directs ; les paquets placés
+    // directement dans ce dossier sont toujours inclus (sauf exclusion durable).
+    // Dossier sans sous-dossier : on propose directement ses listes (paquets) à cocher.
     const directSubfolders = sortByOrder(childFolders(scopeId));
-    reviewFolderSelection = new Set(directSubfolders.map(f => f.id));
-    const directDeckIds = filterExcludedDecks(decksInFolder(scopeId).map(d=>d.id));
+    const directDecks = sortByOrder(decksInFolder(scopeId)).filter(d => !d.excludedFromReviews);
     const allTreeDeckIds = filterExcludedDecks(deckIdsInFolderTree(scopeId));
     dueForScope = allTreeDeckIds.reduce((s,id)=>s+dueCardsForDeck(id).length,0);
     if(directSubfolders.length === 0){
-      wrap.innerHTML = '<p class="hint">Aucun sous-dossier : les paquets de ce dossier seront révisés directement.</p>';
+      reviewFolderUsesDecks = true;
+      foldersLabel.textContent = 'Listes à inclure';
+      reviewFolderSelection = new Set(directDecks.map(d => d.id));
+      if(directDecks.length === 0) wrap.innerHTML = '<p class="hint">Aucune liste révisable dans ce dossier.</p>';
+      directDecks.forEach(d => wrap.appendChild(buildCheckRow(d.id, d.name, dueCardsForDeck(d.id).length)));
     } else {
+      foldersLabel.textContent = 'Sous-dossiers à inclure';
+      reviewFolderSelection = new Set(directSubfolders.map(f => f.id));
       directSubfolders.forEach(f => {
         const subDeckIds = filterExcludedDecks(deckIdsInFolderTree(f.id));
         const subDue = subDeckIds.reduce((s,id)=>s+dueCardsForDeck(id).length,0);
         wrap.appendChild(buildCheckRow(f.id, f.name, subDue));
       });
-    }
-    if(directDeckIds.length > 0){
-      const note = document.createElement('p');
-      note.className = 'hint';
-      note.textContent = `${directDeckIds.length} paquet${directDeckIds.length>1?'s':''} directement dans ce dossier.`;
-      wrap.appendChild(note);
+      if(directDecks.length > 0){
+        const note = document.createElement('p');
+        note.className = 'hint';
+        note.textContent = `${directDecks.length} paquet${directDecks.length>1?'s':''} directement dans ce dossier (toujours inclus).`;
+        wrap.appendChild(note);
+      }
     }
   } else {
     dueForScope = dueCardsForDeck(currentDeckId).length;
@@ -2045,6 +2014,8 @@ function openReviewModal(mode, scopeId){
   const savedPrefs = prefsByScope[scopeKey] || {};
   document.getElementById('reviewDirFB').checked = savedPrefs.fb !== undefined ? !!savedPrefs.fb : true;
   document.getElementById('reviewDirBF').checked = savedPrefs.bf !== undefined ? !!savedPrefs.bf : false;
+  document.getElementById('reviewDirStar').checked = !!savedPrefs.star;
+  syncDirStarState();
   document.getElementById('reviewForce').checked = dueForScope === 0;
   document.getElementById('reviewShuffle').checked = savedPrefs.shuffle !== undefined ? !!savedPrefs.shuffle : true;
   document.getElementById('reviewImportantOnly').checked = savedPrefs.importantOnly !== undefined ? !!savedPrefs.importantOnly : false;
@@ -2053,6 +2024,16 @@ function openReviewModal(mode, scopeId){
 }
 document.getElementById('cancelReview').addEventListener('click', () => modalReview.classList.add('hidden'));
 modalReview.addEventListener('click', (e) => { if(e.target === modalReview) modalReview.classList.add('hidden'); });
+
+function syncDirStarState(){
+  const star = document.getElementById('reviewDirStar').checked;
+  ['reviewDirFB','reviewDirBF'].forEach(id => {
+    const el = document.getElementById(id);
+    el.disabled = star;
+    el.closest('.check-opt').style.opacity = star ? '.45' : '';
+  });
+}
+document.getElementById('reviewDirStar').addEventListener('change', syncDirStarState);
 
 function cardIdsForScope(deckIds, force, importantOnly){
   let pool = deckIds.flatMap(id => cardsForDeck(id));
@@ -2063,14 +2044,15 @@ function cardIdsForScope(deckIds, force, importantOnly){
 document.getElementById('startReviewBtn').addEventListener('click', () => {
   const fb = document.getElementById('reviewDirFB').checked;
   const bf = document.getElementById('reviewDirBF').checked;
-  if(!fb && !bf){ showToast('Choisissez au moins un sens de révision'); return; }
-  const directions = { fb, bf };
+  const star = document.getElementById('reviewDirStar').checked;
+  if(!star && !fb && !bf){ showToast('Choisissez au moins un sens de révision'); return; }
+  const directions = { fb, bf, star };
   const force = document.getElementById('reviewForce').checked;
   const shuffle = document.getElementById('reviewShuffle').checked;
   const importantOnly = document.getElementById('reviewImportantOnly').checked;
 
   const scopeKey = currentPrefScopeKey();
-  prefsByScope[scopeKey] = { fb, bf, shuffle, importantOnly };
+  prefsByScope[scopeKey] = { fb, bf, star, shuffle, importantOnly };
   persistPrefsByScope();
 
   modalReview.classList.add('hidden');
@@ -2083,10 +2065,15 @@ document.getElementById('startReviewBtn').addEventListener('click', () => {
   } else if(reviewMode === 'folder'){
     // paquets directement dans ce dossier (toujours inclus, sauf exclusion durable) + paquets
     // des sous-dossiers cochés
-    let deckIds = filterExcludedDecks(decksInFolder(reviewScopeId).map(d=>d.id));
-    Array.from(reviewFolderSelection).forEach(fid => {
-      deckIds = deckIds.concat(filterExcludedDecks(deckIdsInFolderTree(fid)));
-    });
+    let deckIds;
+    if(reviewFolderUsesDecks){
+      deckIds = filterExcludedDecks(Array.from(reviewFolderSelection));
+    } else {
+      deckIds = filterExcludedDecks(decksInFolder(reviewScopeId).map(d=>d.id));
+      Array.from(reviewFolderSelection).forEach(fid => {
+        deckIds = deckIds.concat(filterExcludedDecks(deckIdsInFolderTree(fid)));
+      });
+    }
     ids = cardIdsForScope(deckIds, force, importantOnly);
     label = (folders[reviewScopeId] && folders[reviewScopeId].name) || 'Révision';
     scopeDeckId = null;
@@ -2106,6 +2093,36 @@ document.getElementById('startReviewBtn').addEventListener('click', () => {
   if(ids.length === 0){ showToast('Aucune carte à réviser avec ces critères'); return; }
   startStudySession(ids, directions, shuffle, label, scopeDeckId);
 });
+
+/* ================= réglages : ordre des dossiers ================= */
+const modalSettings = document.getElementById('modalSettings');
+function renderFolderOrderList(){
+  const wrap = document.getElementById('folderOrderList');
+  wrap.innerHTML = '';
+  if(Object.keys(folders).length === 0){
+    wrap.innerHTML = '<p class="hint">Aucun dossier pour l\'instant.</p>';
+    return;
+  }
+  function addLevel(parentId, depth){
+    const sibs = sortByOrder(childFolders(parentId));
+    sibs.forEach((f, i) => {
+      const row = document.createElement('div');
+      row.className = 'order-row';
+      row.style.marginLeft = (depth * 16) + 'px';
+      row.innerHTML = `<span class="oname">${depth>0 ? '⤷ ' : ''}${escapeHTML(f.name)}</span>
+        <button class="obtn" data-act="up" aria-label="Monter" ${i===0?'disabled':''}>▲</button>
+        <button class="obtn" data-act="down" aria-label="Descendre" ${i===sibs.length-1?'disabled':''}>▼</button>`;
+      row.querySelector('[data-act="up"]').addEventListener('click', () => { moveFolderOrder(f.id, -1); renderFolderOrderList(); });
+      row.querySelector('[data-act="down"]').addEventListener('click', () => { moveFolderOrder(f.id, 1); renderFolderOrderList(); });
+      wrap.appendChild(row);
+      addLevel(f.id, depth+1);
+    });
+  }
+  addLevel(null, 0);
+}
+document.getElementById('openSettingsBtn').addEventListener('click', () => { renderFolderOrderList(); modalSettings.classList.remove('hidden'); });
+document.getElementById('closeSettings').addEventListener('click', () => modalSettings.classList.add('hidden'));
+modalSettings.addEventListener('click', (e) => { if(e.target === modalSettings) modalSettings.classList.add('hidden'); });
 
 /* ================= navigation : boutons ================= */
 document.getElementById('reviewAllBtn').addEventListener('click', () => {
