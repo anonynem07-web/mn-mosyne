@@ -183,10 +183,10 @@ main{flex:1;scrollbar-gutter:stable;padding:6px 18px calc(24px + var(--safe-bott
 
 /* ---------- study ---------- */
 .study-wrap{display:flex;flex-direction:column;align-items:center;padding-top:6px;width:100%;}
-#studyCardArea{width:100%;max-width:340px;display:flex;flex-direction:column;align-items:center;}
+#studyCardArea{width:100%;max-width:300px;display:flex;flex-direction:column;align-items:center;}
 .study-wrap, #studyCardArea, .card-stage{min-width:0;}
 .study-progress{font-family:var(--font-mono);font-size:12.5px;color:rgba(251,246,234,.7);margin-bottom:18px;}
-.card-stage{position:relative;width:100%;max-width:340px;flex:none;height:420px;margin-bottom:26px;touch-action:pan-y;}
+.card-stage{position:relative;width:100%;max-width:300px;flex:none;height:420px;margin-bottom:26px;touch-action:pan-y;}
 .stack-deco{position:absolute;inset:0;border-radius:14px;background:var(--card-shade);}
 .stack-deco.s2{transform:translateY(10px) scale(.97);opacity:.65;}
 .stack-deco.s1{transform:translateY(5px) scale(.985);opacity:.85;}
@@ -244,7 +244,7 @@ main{flex:1;scrollbar-gutter:stable;padding:6px 18px calc(24px + var(--safe-bott
 .face .important-stamp svg{display:block;width:100%;height:100%;}
 .tap-hint{font-family:var(--font-mono);font-size:11.5px;color:rgba(251,246,234,.5);margin-bottom:18px;text-align:center;}
 
-.grade-row{display:flex;gap:8px;width:100%;max-width:340px;}
+.grade-row{display:flex;gap:8px;width:100%;max-width:300px;}
 .grade-btn{
   flex:1;border:none;border-radius:10px;padding:12px 4px 10px 4px;
   display:flex;flex-direction:column;align-items:center;gap:3px;
@@ -257,7 +257,7 @@ main{flex:1;scrollbar-gutter:stable;padding:6px 18px calc(24px + var(--safe-bott
 .grade-btn.easy{background:#8FB6D4;}
 .grade-btn:active{transform:scale(.96);}
 
-.study-toolbar{display:flex;gap:10px;width:100%;max-width:340px;margin-top:10px;}
+.study-toolbar{display:flex;gap:10px;width:100%;max-width:300px;margin-top:10px;}
 .undo-btn{
   background:none;border:1px solid rgba(251,246,234,.3);color:var(--card);
   border-radius:10px;padding:9px 14px;font-family:var(--font-mono);font-size:12.5px;
@@ -610,7 +610,7 @@ main{flex:1;scrollbar-gutter:stable;padding:6px 18px calc(24px + var(--safe-bott
       <label>Sens de révision</label>
       <label class="check-opt"><input type="checkbox" id="reviewDirFB"><span class="cname">Terme → définition</span></label>
       <label class="check-opt"><input type="checkbox" id="reviewDirBF"><span class="cname">Définition → terme</span></label>
-      <label class="check-opt"><input type="checkbox" id="reviewDirStar"><span class="cname">★ Optimisé</span></label>
+      <label class="check-opt"><input type="checkbox" id="reviewDirStar"><span class="cname">★ importantes maîtrisées : définition → terme ; les autres : terme → définition</span></label>
     </div>
 
     <div class="field">
@@ -1712,14 +1712,24 @@ function importAllData(file){
 }
 
 /* ================= étude ================= */
+// Sens "étoilées" — une carte importante est apprise d'abord en terme → définition ; dès qu'elle est
+// maîtrisée (≥80 %), elle passe en définition → terme (card.starDir = 'dt'), son suivi redémarre
+// (voir gradeCurrentCard), et elle y reste. Les cartes non importantes : toujours terme → définition.
+function starNeedsTransition(c){ return !!c && !!c.important && c.starDir !== 'dt' && masteryPct(c) >= 80; }
+function starReversed(c){ return !!c && !!c.important && (c.starDir === 'dt' || masteryPct(c) >= 80); }
+// État "redémarré" : intervalle et répétitions à zéro, facteur de facilité conservé.
+function restartedCard(c){ return { ...c, interval:0, repetition:0, due: todayStr(), starDir:'dt' }; }
+
 function buildStudyQueue(cardIds, directions, shuffle){
   // directions: { fb: bool, bf: bool } — au moins un des deux est vrai (validé à l'appel)
   const both = directions.fb && directions.bf;
   let arr = cardIds.map(id => ({
     cardId: id,
-    // sens "étoilées" : importantes en définition → terme, les autres en terme → définition
-    reversed: directions.star ? !!(cards[id] && cards[id].important)
-            : (both ? (Math.random() < 0.5) : !!directions.bf)
+    // sens "étoilées" : importantes maîtrisées en définition → terme, les autres en terme → définition
+    reversed: directions.star ? starReversed(cards[id])
+            : (both ? (Math.random() < 0.5) : !!directions.bf),
+    // carte importante maîtrisée : on la bascule en terme → définition, avec redémarrage du suivi
+    transition: !!(directions.star && starNeedsTransition(cards[id]))
   }));
   if(shuffle){
     for(let i = arr.length - 1; i > 0; i--){
@@ -1770,7 +1780,7 @@ function renderStudyCard(){
   const deckTag = (!studyScopeDeckId && decks[card.deckId]) ? ' · ' + decks[card.deckId].name : '';
   document.getElementById('faceLabelFront').textContent = 'Question' + deckTag;
   document.getElementById('faceLabelBack').textContent = 'Réponse' + deckTag;
-  document.getElementById('cardStampFront').innerHTML = buildMasteryStampSVG((card.interval ? masteryPct(card) : 0), 'mastery-' + item.cardId);
+  document.getElementById('cardStampFront').innerHTML = buildMasteryStampSVG((!item.transition && card.interval ? masteryPct(card) : 0), 'mastery-' + item.cardId);
   document.getElementById('cardImportantStampFront').innerHTML = card.important ? buildImportantStampSVG('imp-front-' + item.cardId) : '';
   document.getElementById('cardImportantStampFront').classList.toggle('hidden', !card.important);
   document.getElementById('cardImportantStampBack').innerHTML = card.important ? buildImportantStampSVG('imp-back-' + item.cardId) : '';
@@ -1783,10 +1793,11 @@ function renderStudyCard(){
   document.getElementById('gradeRow').classList.add('hidden');
   document.getElementById('tapHint').textContent = 'Touchez la carte pour voir la réponse';
 
+  const previewBase = item.transition ? restartedCard(card) : card;
   document.getElementById('intAgain').textContent = 'bientôt';
-  document.getElementById('intHard').textContent = formatIntervalPreview(previewInterval(card,3));
-  document.getElementById('intGood').textContent = formatIntervalPreview(previewInterval(card,4));
-  document.getElementById('intEasy').textContent = formatIntervalPreview(previewInterval(card,5));
+  document.getElementById('intHard').textContent = formatIntervalPreview(previewInterval(previewBase,3));
+  document.getElementById('intGood').textContent = formatIntervalPreview(previewInterval(previewBase,4));
+  document.getElementById('intEasy').textContent = formatIntervalPreview(previewInterval(previewBase,5));
   updateUndoButton();
 }
 
@@ -1799,7 +1810,7 @@ function gradeCurrentCard(quality){
   const deckIdOfCard = cards[item.cardId].deckId;
   const prevCardState = { ...cards[item.cardId] };
   studyHistory.push({ cardId: item.cardId, deckId: deckIdOfCard, prevCardState, queueIndex: studyIndex });
-  cards[item.cardId] = scheduleCard(cards[item.cardId], quality);
+  cards[item.cardId] = scheduleCard(item.transition ? restartedCard(cards[item.cardId]) : cards[item.cardId], quality);
   persistCards();
   recordReview(deckIdOfCard);
   // Correctif : une carte "Encore" n'est plus réinsérée plus loin dans CETTE session (ce qui
@@ -2035,10 +2046,12 @@ function syncDirStarState(){
 }
 document.getElementById('reviewDirStar').addEventListener('change', syncDirStarState);
 
-function cardIdsForScope(deckIds, force, importantOnly){
+function cardIdsForScope(deckIds, force, importantOnly, star){
   let pool = deckIds.flatMap(id => cardsForDeck(id));
   if(importantOnly) pool = pool.filter(c => c.important);
-  return (force ? pool : pool.filter(isDue)).map(c => c.id);
+  // Sens "étoilées" : une carte importante maîtrisée (≥80 %) en terme → définition est proposée
+  // même si elle n'est pas due, pour passer au sens définition → terme.
+  return (force ? pool : pool.filter(c => isDue(c) || (star && starNeedsTransition(c)))).map(c => c.id);
 }
 
 document.getElementById('startReviewBtn').addEventListener('click', () => {
@@ -2059,7 +2072,7 @@ document.getElementById('startReviewBtn').addEventListener('click', () => {
 
   let ids, label, scopeDeckId;
   if(reviewMode === 'deck'){
-    ids = cardIdsForScope([currentDeckId], force, importantOnly);
+    ids = cardIdsForScope([currentDeckId], force, importantOnly, directions.star);
     label = decks[currentDeckId].name;
     scopeDeckId = currentDeckId;
   } else if(reviewMode === 'folder'){
@@ -2074,7 +2087,7 @@ document.getElementById('startReviewBtn').addEventListener('click', () => {
         deckIds = deckIds.concat(filterExcludedDecks(deckIdsInFolderTree(fid)));
       });
     }
-    ids = cardIdsForScope(deckIds, force, importantOnly);
+    ids = cardIdsForScope(deckIds, force, importantOnly, directions.star);
     label = (folders[reviewScopeId] && folders[reviewScopeId].name) || 'Révision';
     scopeDeckId = null;
   } else {
@@ -2085,7 +2098,7 @@ document.getElementById('startReviewBtn').addEventListener('click', () => {
       if(reviewFolderSelection.has(key)) deckIds = deckIds.concat(b.deckIds);
     });
     deckIds = filterExcludedDecks(deckIds);
-    ids = cardIdsForScope(deckIds, force, importantOnly);
+    ids = cardIdsForScope(deckIds, force, importantOnly, directions.star);
     label = 'Révision';
     scopeDeckId = null;
   }
