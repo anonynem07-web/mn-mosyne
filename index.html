@@ -5,7 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Mnémosyne — pour le vocabulaire aussi compliqué à apprendre que le nom de cette titanide</title>
 <meta name="theme-color" content="#3E3226">
-<meta name="color-scheme" content="light">
+<meta name="color-scheme" content="light dark">
+<script>(function(){try{var p=localStorage.getItem('fiches_theme_v1')||'auto';var d=p==='dark'||(p==='auto'&&window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.setAttribute('data-theme',d?'dark':'light');var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute('content',d?'#171310':'#3E3226');}catch(e){}})();</script>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/png" sizes="32x32" href="icon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -15,7 +16,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,500&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{
-  color-scheme:light; /* l'interface a son propre thème : on évite l'assombrissement automatique du navigateur */
+  color-scheme:light;
+  --text:#FBF6EA; /* texte posé sur le fond noyer (identique en clair et en nuit) */
   --walnut:#3E3226;
   --walnut-deep:#2C231A;
   --walnut-light:#57493A;
@@ -44,7 +46,7 @@ body{
     linear-gradient(90deg, var(--walnut-light) 1px, transparent 1px);
   background-size:64px 64px;
   background-position:-1px -1px;
-  color:var(--card);
+  color:var(--text);
   font-family:var(--font-body);
   min-height:100vh;
   min-height:100dvh;
@@ -66,12 +68,12 @@ u{text-decoration:underline;text-decoration-color:var(--brass-deep);text-underli
 
 /* ---------- topbar ---------- */
 .topbar{display:flex;align-items:center;gap:8px;padding:18px 18px 10px 18px;}
-.topbar .back{background:none;border:none;color:var(--card);font-size:22px;padding:4px 8px 4px 0;line-height:1;opacity:.85;flex:none;}
+.topbar .back{background:none;border:none;color:var(--text);font-size:22px;padding:4px 8px 4px 0;line-height:1;opacity:.85;flex:none;}
 .topbar .back:hover{opacity:1;}
 .topbar h1{font-family:var(--font-display);font-weight:600;font-size:22px;margin:0;flex:1;letter-spacing:.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.topbar .stamp-btn{background:none;border:1px solid rgba(251,246,234,.35);color:var(--card);border-radius:999px;padding:6px 12px;font-family:var(--font-mono);font-size:11.5px;letter-spacing:.03em;flex:none;}
+.topbar .stamp-btn{background:none;border:1px solid rgba(251,246,234,.35);color:var(--text);border-radius:999px;padding:6px 12px;font-family:var(--font-mono);font-size:11.5px;letter-spacing:.03em;flex:none;}
 .topbar .stamp-btn:hover{border-color:var(--brass);color:var(--brass);}
-.topbar .icon-btn{background:none;border:none;color:var(--card);font-size:18px;padding:4px 6px;flex:none;opacity:.85;}
+.topbar .icon-btn{background:none;border:none;color:var(--text);font-size:18px;padding:4px 6px;flex:none;opacity:.85;}
 .topbar .icon-btn:hover{opacity:1;color:var(--brass);}
 
 main{flex:1;scrollbar-gutter:stable;padding:6px 18px calc(24px + var(--safe-bottom)) 18px;overflow-y:auto;}
@@ -83,7 +85,7 @@ main{flex:1;scrollbar-gutter:stable;padding:6px 18px calc(24px + var(--safe-bott
 .review-cta{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;background:var(--brass);color:var(--walnut-deep);border:none;border-radius:14px;padding:16px 18px;font-family:var(--font-display);font-size:19px;font-weight:600;box-shadow:0 6px 0 var(--brass-deep);}
 .review-cta:active{transform:translateY(3px);box-shadow:0 3px 0 var(--brass-deep);}
 .review-cta .count{font-family:var(--font-mono);font-size:14px;background:var(--walnut-deep);color:var(--brass);padding:3px 9px;border-radius:999px;}
-.review-cta.empty{background:transparent;border:1px dashed rgba(251,246,234,.3);color:var(--card);box-shadow:none;font-size:15px;font-family:var(--font-body);justify-content:center;}
+.review-cta.empty{background:transparent;border:1px dashed rgba(251,246,234,.3);color:var(--text);box-shadow:none;font-size:15px;font-family:var(--font-body);justify-content:center;}
 
 .section-label{font-family:var(--font-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:rgba(251,246,234,.55);margin:24px 4px 10px 4px;display:flex;align-items:center;justify-content:space-between;}
 
@@ -93,7 +95,7 @@ main{flex:1;scrollbar-gutter:stable;padding:6px 18px calc(24px + var(--safe-bott
 .folder-group{margin-bottom:6px;}
 .folder-header{display:flex;align-items:center;gap:8px;padding:9px 10px;margin-top:10px;border-radius:8px;background:rgba(251,246,234,.06);cursor:pointer;}
 .folder-header:hover{background:rgba(251,246,234,.1);}
-.folder-header .fname{flex:1;font-family:var(--font-mono);font-size:12.5px;letter-spacing:.03em;color:var(--card);min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.folder-header .fname{flex:1;font-family:var(--font-mono);font-size:12.5px;letter-spacing:.03em;color:var(--text);min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .folder-header .due-badge{font-size:10.5px;padding:3px 8px;}
 .folder-header .fbtn{background:none;border:none;color:rgba(251,246,234,.45);font-size:12px;padding:2px 5px;flex:none;}
 .folder-header .fbtn:hover{color:var(--brass);}
@@ -108,7 +110,7 @@ main{flex:1;scrollbar-gutter:stable;padding:6px 18px calc(24px + var(--safe-bott
 .order-pair{display:flex;align-items:center;gap:1px;flex:none;}
 .order-pair .fbtn{padding:2px 3px;}
 
-.topbar .star-btn{background:none;border:none;color:var(--card);font-family:var(--font-display);font-size:22px;font-weight:600;padding:0;line-height:1;flex:none;opacity:.9;}
+.topbar .star-btn{background:none;border:none;color:var(--text);font-family:var(--font-display);font-size:22px;font-weight:600;padding:0;line-height:1;flex:none;opacity:.9;}
 .topbar .star-btn:hover{opacity:1;color:var(--brass);}
 
 .modal-backdrop.centered{align-items:center;padding:24px;}
@@ -146,20 +148,20 @@ main{flex:1;scrollbar-gutter:stable;padding:6px 18px calc(24px + var(--safe-bott
 .btn{
   font-family:var(--font-body);font-weight:600;font-size:13.5px;
   border-radius:10px;padding:11px 14px;border:1px solid rgba(251,246,234,.3);
-  background:transparent;color:var(--card);flex:1;text-align:center;
+  background:transparent;color:var(--text);flex:1;text-align:center;
 }
 .btn:hover{border-color:var(--brass);color:var(--brass);}
 .btn.primary{background:var(--brass);color:var(--walnut-deep);border-color:var(--brass);}
-.btn.primary:hover{background:var(--brass-deep);color:var(--card);border-color:var(--brass-deep);}
+.btn.primary:hover{background:var(--brass-deep);color:var(--text);border-color:var(--brass-deep);}
 .btn.danger{border-color:rgba(194,75,63,.5);color:#E3A79E;}
 .btn.danger:hover{border-color:var(--rose);color:var(--rose);}
 .btn.full{width:100%;}
 .btn:disabled{opacity:.4;cursor:not-allowed;}
 
 .folder-select-row{display:flex;align-items:center;gap:8px;margin:0 0 12px 0;font-family:var(--font-mono);font-size:12px;color:rgba(251,246,234,.6);}
-.folder-select-row select{background:rgba(251,246,234,.08);color:var(--card);border:1px solid rgba(251,246,234,.2);border-radius:6px;padding:6px 8px;font-family:var(--font-body);font-size:13px;flex:1;}
+.folder-select-row select{background:rgba(251,246,234,.08);color:var(--text);border:1px solid rgba(251,246,234,.2);border-radius:6px;padding:6px 8px;font-family:var(--font-body);font-size:13px;flex:1;}
 .folder-select-row select:hover{border-color:rgba(251,246,234,.35);}
-.folder-select-row select option{background:var(--walnut);color:var(--card);}
+.folder-select-row select option{background:var(--walnut);color:var(--text);}
 
 .card-row{
   display:flex;gap:10px;align-items:flex-start;
@@ -259,7 +261,7 @@ main{flex:1;scrollbar-gutter:stable;padding:6px 18px calc(24px + var(--safe-bott
 
 .study-toolbar{display:flex;gap:10px;width:100%;max-width:300px;margin-top:10px;}
 .undo-btn{
-  background:none;border:1px solid rgba(251,246,234,.3);color:var(--card);
+  background:none;border:1px solid rgba(251,246,234,.3);color:var(--text);
   border-radius:10px;padding:9px 14px;font-family:var(--font-mono);font-size:12.5px;
   display:flex;align-items:center;gap:6px;
 }
@@ -288,7 +290,7 @@ main{flex:1;scrollbar-gutter:stable;padding:6px 18px calc(24px + var(--safe-bott
   display:flex;align-items:flex-end;justify-content:center;
 }
 .modal{
-  width:100%;max-width:480px;background:var(--walnut);color:var(--card);
+  width:100%;max-width:480px;background:var(--walnut);color:var(--text);
   border-radius:18px 18px 0 0;padding:20px 20px calc(20px + var(--safe-bottom)) 20px;
   max-height:88vh;overflow-y:auto;
   border-top:3px solid var(--brass);
@@ -308,7 +310,7 @@ main{flex:1;scrollbar-gutter:stable;padding:6px 18px calc(24px + var(--safe-bott
 .import-preview{font-family:var(--font-mono);font-size:12px;color:var(--brass);margin:-6px 0 12px 0;}
 
 .rt-toolbar{display:flex;gap:6px;margin-bottom:6px;}
-.rt-btn{background:rgba(251,246,234,.1);border:1px solid rgba(251,246,234,.25);color:var(--card);
+.rt-btn{background:rgba(251,246,234,.1);border:1px solid rgba(251,246,234,.25);color:var(--text);
   width:30px;height:28px;border-radius:6px;font-size:13px;display:flex;align-items:center;justify-content:center;}
 .rt-btn:hover{border-color:var(--brass);color:var(--brass);}
 .rt-btn.b{font-weight:700;}
@@ -335,9 +337,31 @@ main{flex:1;scrollbar-gutter:stable;padding:6px 18px calc(24px + var(--safe-bott
 
 .order-row{display:flex;align-items:center;gap:8px;background:rgba(251,246,234,.06);border-radius:8px;padding:6px 8px;margin-bottom:6px;}
 .order-row .oname{flex:1;min-width:0;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.order-row .obtn{background:rgba(251,246,234,.1);border:1px solid rgba(251,246,234,.25);color:var(--card);width:34px;height:30px;border-radius:6px;font-size:14px;line-height:1;}
+.order-row .obtn{background:rgba(251,246,234,.1);border:1px solid rgba(251,246,234,.25);color:var(--text);width:34px;height:30px;border-radius:6px;font-size:14px;line-height:1;}
 .order-row .obtn:hover:not(:disabled){border-color:var(--brass);color:var(--brass);}
 .order-row .obtn:disabled{opacity:.25;cursor:default;}
+
+/* ---------- mode nuit ---------- */
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --walnut:#241D16; --walnut-deep:#171310; --walnut-light:#33291F;
+  --card:#3B3128; --card-shade:#2E261E;
+  --line-blue:#5B7494; --line-red:#B5554A;
+  --ink:#F1E8D4; --ink-soft:#B8AA94;
+}
+:root[data-theme="dark"] .face .stamp,
+:root[data-theme="dark"] .face .important-stamp{mix-blend-mode:normal;}
+:root[data-theme="dark"] .face{box-shadow:0 10px 24px rgba(0,0,0,.6);}
+
+/* ---------- recherche ---------- */
+.search-input{flex:1;min-width:0;font-family:var(--font-body);font-size:15px;color:var(--ink);background:var(--card);border:none;border-radius:999px;padding:9px 16px;}
+.card-row .path{font-family:var(--font-mono);font-size:10.5px;color:var(--brass-deep);margin:5px 0 0 0;text-decoration:underline;text-decoration-color:rgba(198,113,92,.4);text-underline-offset:2px;word-break:break-word;}
+.excl-mark{color:var(--ink-soft);font-size:12px;}
+
+/* ---------- listes déroulantes : jamais plus larges que l'écran ---------- */
+.folder-select-row span{flex:none;}
+.folder-select-row select{flex:1 1 0;min-width:0;width:100%;max-width:100%;text-overflow:ellipsis;}
+.field select{width:100%;max-width:100%;min-width:0;text-overflow:ellipsis;}
 </style>
 </head>
 <body>
@@ -349,6 +373,7 @@ main{flex:1;scrollbar-gutter:stable;padding:6px 18px calc(24px + var(--safe-bott
     <div class="topbar">
       <button class="star-btn" id="starBtn" aria-label="Note">✦</button>
       <h1 id="homeTitle"></h1>
+      <button class="icon-btn" id="openSearchBtn" aria-label="Rechercher" title="Rechercher"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21"/></svg></button>
       <button class="icon-btn" id="openStatsBtn" aria-label="Statistiques" title="Statistiques">☙</button>
     </div>
     <main>
@@ -391,10 +416,10 @@ main{flex:1;scrollbar-gutter:stable;padding:6px 18px calc(24px + var(--safe-bott
       <div class="folder-select-row">
         <span>Trier par</span>
         <select id="deckSortSelect">
+          <option value="alpha">Ordre alphabétique</option>
           <option value="created">Date de création</option>
           <option value="lastAnswer">Dernière réponse</option>
           <option value="important">Importance</option>
-          <option value="alpha">Ordre alphabétique</option>
           <option value="chrono">Ordre chronologique</option>
         </select>
       </div>
@@ -465,6 +490,18 @@ main{flex:1;scrollbar-gutter:stable;padding:6px 18px calc(24px + var(--safe-bott
           <button class="btn primary" id="sessionEndBtn">Retour</button>
         </div>
       </div>
+    </main>
+  </section>
+
+  <!-- ===== RECHERCHE ===== -->
+  <section id="view-search" class="hidden">
+    <div class="topbar">
+      <button class="back" id="searchBackBtn" aria-label="Retour">←</button>
+      <input type="search" class="search-input" id="searchInput" placeholder="Chercher un terme ou une définition…" autocomplete="off" autocapitalize="off" spellcheck="false">
+    </div>
+    <main>
+      <div class="section-label" id="searchCount"></div>
+      <div id="searchResults"></div>
     </main>
   </section>
 
@@ -554,6 +591,10 @@ main{flex:1;scrollbar-gutter:stable;padding:6px 18px calc(24px + var(--safe-bott
     <label class="check-opt">
       <input type="checkbox" id="cardImportantInput">
       <span class="cname">Marquer comme importante</span>
+    </label>
+    <label class="check-opt">
+      <input type="checkbox" id="cardExcludedInput">
+      <span class="cname">Exclure des révisions automatiques</span>
     </label>
     <div class="modal-actions">
       <button class="btn danger hidden" id="deleteCard">Supprimer</button>
@@ -689,10 +730,47 @@ main{flex:1;scrollbar-gutter:stable;padding:6px 18px calc(24px + var(--safe-bott
   </div>
 </div>
 
+<!-- ===== MODAL: export complet du vocabulaire ===== -->
+<div class="modal-backdrop hidden" id="modalExportVocab">
+  <div class="modal">
+    <h3>Exporter tout le vocabulaire</h3>
+    <div class="field">
+      <label>Dossiers à exporter</label>
+      <div class="modal-actions" style="margin:0 0 6px 0;">
+        <button class="btn" id="exportVocabAll">Tout cocher</button>
+        <button class="btn" id="exportVocabNone">Tout décocher</button>
+      </div>
+      <div id="exportVocabTree"></div>
+      <p class="hint">Termes et définitions uniquement (ni maîtrise, ni fréquence). Cocher un dossier coche ses sous-dossiers ; vous pouvez ensuite en décocher.</p>
+    </div>
+    <div class="field">
+      <label>Aperçu</label>
+      <textarea class="export-box mono" id="exportVocabText" readonly></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" id="closeExportVocab">Fermer</button>
+      <button class="btn" id="copyExportVocab">Copier</button>
+      <button class="btn primary" id="downloadExportVocab">Télécharger .txt</button>
+    </div>
+  </div>
+</div>
+
 <!-- ===== MODAL: réglages ===== -->
 <div class="modal-backdrop hidden" id="modalSettings">
   <div class="modal">
     <h3>Réglages</h3>
+    <div class="field">
+      <label for="themeSelect">Apparence</label>
+      <select id="themeSelect">
+        <option value="auto">Automatique (suit l'appareil)</option>
+        <option value="light">Clair</option>
+        <option value="dark">Nuit</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Vocabulaire</label>
+      <button class="btn full" id="openExportVocabBtn">Exporter tout le vocabulaire (.txt)</button>
+    </div>
     <div class="field">
       <label>Ordre des dossiers et sous-dossiers</label>
       <div id="folderOrderList"></div>
@@ -748,8 +826,10 @@ function addDaysStr(days){
   d.setDate(d.getDate() + days);
   return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
 }
+// Une carte exclue des révisions automatiques n'est jamais "due" (elle n'est ni comptée ni proposée,
+// sauf si l'on coche "Forcer" dans la fenêtre de révision).
 function isDue(card){
-  return card.due <= todayStr();
+  return !card.excluded && card.due <= todayStr();
 }
 const MONTHS_ABBR = ['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
 function formatStampDate(dateStr){
@@ -801,12 +881,17 @@ function scheduleCard(card, quality){
       const earlyDays = Math.max(0, daysBetween(today, card.due));
       const earlyRatio = Math.min(1, earlyDays / card.interval);
       base = base * (1 - EARLY_PENALTY_MAX * earlyRatio);
+      // Une bonne réponse (AA/LA) donnée en avance ne doit jamais RACCOURCIR l'intervalle acquis.
+      if(quality >= 4) base = Math.max(base, card.interval);
     }
     next.interval = Math.max(1, Math.round(base));
     next.repetition = (next.repetition || 0) + 1;
     next.due = addDaysStr(next.interval);
   }
-  next.ease = Math.max(1.3, (next.ease || 2.5) + (0.1 - (5-quality)*(0.08+(5-quality)*0.02)));
+  // NA : léger malus de facilité (-0,2, comme Anki) au lieu de la formule SM-2 qui retirait 0,8 d'un
+  // coup et ralentissait durablement la progression de la carte après un simple trou de mémoire.
+  if(quality < 3) next.ease = Math.max(1.3, (next.ease || 2.5) - 0.2);
+  else next.ease = Math.max(1.3, (next.ease || 2.5) + (0.1 - (5-quality)*(0.08+(5-quality)*0.02)));
   next.lastQuality = quality;
   next.lastAnsweredAt = Date.now();
   return next;
@@ -825,8 +910,20 @@ function previewInterval(card, quality){
 // mémorisé pour les deux sens : une carte jugée maîtrisée dans un sens est donc automatiquement
 // considérée maîtrisée dans l'autre. Il n'y a pas de suivi séparé par sens de révision.
 const MASTERY_CAP_DAYS = 17;
+// Cohérence maîtrise / fréquence : la maîtrise suit l'intervalle de révision, mais une carte EN RETARD
+// (échéance dépassée) perd une part de sa maîtrise, proportionnelle au retard, jusqu'à la moitié
+// lorsque le retard égale l'intervalle. (Mettre OVERDUE_DECAY à 0 pour désactiver.)
+const OVERDUE_DECAY = 0.5;
+function effectiveInterval(card){
+  const iv = card.interval || 0;
+  if(iv <= 0 || !card.due) return iv;
+  const today = todayStr();
+  if(card.due >= today) return iv;
+  const overdue = daysBetween(card.due, today);
+  return iv * (1 - OVERDUE_DECAY * Math.min(1, overdue / iv));
+}
 function masteryPct(card){
-  return Math.max(0, Math.min(100, Math.round((card.interval||0) / MASTERY_CAP_DAYS * 100)));
+  return Math.max(0, Math.min(100, Math.round(effectiveInterval(card) / MASTERY_CAP_DAYS * 100)));
 }
 function deckMasteryPct(deckId){
   const arr = cardsForDeck(deckId);
@@ -1031,6 +1128,7 @@ const views = {
   deck: document.getElementById('view-deck'),
   study: document.getElementById('view-study'),
   stats: document.getElementById('view-stats'),
+  search: document.getElementById('view-search'),
 };
 let currentDeckId = null;
 let studyQueue = [];  // [{cardId, reversed}]
@@ -1038,7 +1136,7 @@ let studyIndex = 0;
 let studyScopeDeckId = null; // paquet unique en cours de révision, ou null si multi-dossiers
 let cardRevealed = false;
 let studyHistory = []; // pile des révisions récentes, pour "revenir en arrière" : {cardId, deckId, prevCardState, queueIndex}
-let deckSortMode = 'created'; // 'created' | 'lastAnswer' | 'important' | 'alpha' | 'chrono' — état d'affichage du paquet ouvert
+let deckSortMode = 'alpha'; // 'created' | 'lastAnswer' | 'important' | 'alpha' | 'chrono' — état d'affichage du paquet ouvert
 
 function showView(name){
   Object.values(views).forEach(v => v.classList.add('hidden'));
@@ -1231,8 +1329,8 @@ function renderDeckRow(deck){
 /* ================= rendu : détail paquet ================= */
 function openDeck(deckId){
   currentDeckId = deckId;
-  deckSortMode = 'created';
-  document.getElementById('deckSortSelect').value = 'created';
+  deckSortMode = 'alpha';
+  document.getElementById('deckSortSelect').value = 'alpha';
   renderDeck();
   showView('deck');
 }
@@ -1498,7 +1596,7 @@ function renderDeck(){
     row.style.borderLeftColor = lastAnswerColor(c);
     row.innerHTML = `
       <div class="txt">
-        <p class="front">${c.important ? '<span class="important-mark">★</span> ' : ''}${renderMarkupInline(c.front)}</p>
+        <p class="front">${c.important ? '<span class="important-mark">★</span> ' : ''}${c.excluded ? '<span class="excl-mark" title="Exclue des révisions automatiques">⊘</span> ' : ''}${renderMarkupInline(c.front)}</p>
         <p class="back">${renderMarkupInline(c.back)}</p>
       </div>
       <div class="side">
@@ -2051,7 +2149,7 @@ function cardIdsForScope(deckIds, force, importantOnly, star){
   if(importantOnly) pool = pool.filter(c => c.important);
   // Sens "étoilées" : une carte importante maîtrisée (≥80 %) en terme → définition est proposée
   // même si elle n'est pas due, pour passer au sens définition → terme.
-  return (force ? pool : pool.filter(c => isDue(c) || (star && starNeedsTransition(c)))).map(c => c.id);
+  return (force ? pool : pool.filter(c => isDue(c) || (star && !c.excluded && starNeedsTransition(c)))).map(c => c.id);
 }
 
 document.getElementById('startReviewBtn').addEventListener('click', () => {
@@ -2136,6 +2234,180 @@ function renderFolderOrderList(){
 document.getElementById('openSettingsBtn').addEventListener('click', () => { renderFolderOrderList(); modalSettings.classList.remove('hidden'); });
 document.getElementById('closeSettings').addEventListener('click', () => modalSettings.classList.add('hidden'));
 modalSettings.addEventListener('click', (e) => { if(e.target === modalSettings) modalSettings.classList.add('hidden'); });
+
+/* ================= recherche ================= */
+let searchIndex = [];
+const SEARCH_MAX = 150;
+// Normalisation : sans accents, sans casse, sans mise en forme (**, __, _) ni séparateur "\".
+function normSearch(t){
+  return String(t || '').replace(/\\/g, ' ').replace(/\*\*|__|_/g, '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+}
+function buildSearchIndex(){
+  searchIndex = Object.values(cards).map(c => ({ c, h: normSearch(c.front) + ' ' + normSearch(c.back) }));
+}
+function deckPathLabel(deck){
+  const parts = [];
+  let fid = deck.folderId || null;
+  while(fid && folders[fid]){ parts.unshift(folders[fid].name); fid = folders[fid].parentId || null; }
+  parts.push(deck.name);
+  return parts.join(' › ');
+}
+function renderSearch(){
+  const words = normSearch(document.getElementById('searchInput').value).split(/\s+/).filter(Boolean);
+  const list = document.getElementById('searchResults');
+  const count = document.getElementById('searchCount');
+  list.innerHTML = '';
+  if(!words.length){
+    count.textContent = '';
+    list.innerHTML = '<div class="empty-state"><p>Tapez un ou plusieurs mots pour chercher dans tous les termes et toutes les définitions.</p></div>';
+    return;
+  }
+  const matches = searchIndex.filter(e => words.every(w => e.h.includes(w))).map(e => e.c);
+  matches.sort((a,b) => compareAlpha(a.front, b.front));
+  count.textContent = matches.length + ' résultat' + (matches.length>1?'s':'') + (matches.length > SEARCH_MAX ? ' (' + SEARCH_MAX + ' affichés)' : '');
+  if(!matches.length){
+    list.innerHTML = '<div class="empty-state"><p>Aucun résultat.</p></div>';
+    return;
+  }
+  matches.slice(0, SEARCH_MAX).forEach(c => {
+    const deck = decks[c.deckId];
+    const row = document.createElement('div');
+    row.className = 'card-row';
+    row.style.borderLeftColor = lastAnswerColor(c);
+    row.innerHTML = `
+      <div class="txt">
+        <p class="front">${c.important ? '<span class="important-mark">★</span> ' : ''}${c.excluded ? '<span class="excl-mark">⊘</span> ' : ''}${renderMarkupInline(c.front)}</p>
+        <p class="back">${renderMarkupInline(c.back)}</p>
+        ${deck ? `<p class="path" data-act="deck">${escapeHTML(deckPathLabel(deck))}</p>` : ''}
+      </div>`;
+    const pathEl = row.querySelector('[data-act="deck"]');
+    if(pathEl) pathEl.addEventListener('click', (e) => { e.stopPropagation(); openDeck(deck.id); });
+    row.addEventListener('click', () => openCardModal(c.id, 'search'));
+    list.appendChild(row);
+  });
+}
+document.getElementById('openSearchBtn').addEventListener('click', () => {
+  buildSearchIndex();
+  document.getElementById('searchInput').value = '';
+  renderSearch();
+  showView('search');
+  document.getElementById('searchInput').focus();
+});
+document.getElementById('searchInput').addEventListener('input', renderSearch);
+document.getElementById('searchBackBtn').addEventListener('click', () => { showView('home'); renderHome(); });
+
+/* ================= export complet du vocabulaire ================= */
+const modalExportVocab = document.getElementById('modalExportVocab');
+let exportVocabSel = new Set(); // ids de dossiers cochés, plus 'none' pour "Sans dossier"
+function exportVocabAllKeys(){
+  const keys = Object.keys(folders);
+  if(decksInFolder(null).length > 0) keys.push('none');
+  return keys;
+}
+function buildVocabExport(sel){
+  const lines = [];
+  const hashes = n => '#'.repeat(n);
+  function deckBlock(deck, level){
+    lines.push(hashes(level) + ' ' + deck.name);
+    cardsForDeck(deck.id).sort((a,b) => a.createdAt - b.createdAt).forEach(c => lines.push(c.front + ' : ' + c.back));
+    lines.push('');
+  }
+  function hasSelection(f){ return descendantFolderIds(f.id).some(id => sel.has(id)); }
+  function walk(parentId, level){
+    sortByOrder(childFolders(parentId)).forEach(f => {
+      if(!hasSelection(f)) return;
+      lines.push(hashes(level) + ' ' + f.name);
+      lines.push('');
+      if(sel.has(f.id)) sortByOrder(decksInFolder(f.id)).forEach(d => deckBlock(d, level + 1));
+      walk(f.id, level + 1);
+    });
+  }
+  walk(null, 1);
+  if(sel.has('none')){
+    const orphans = sortByOrder(decksInFolder(null));
+    if(orphans.length){
+      lines.push('# Sans dossier');
+      lines.push('');
+      orphans.forEach(d => deckBlock(d, 2));
+    }
+  }
+  const out = lines.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+  return out ? out + '\n' : '';
+}
+function renderExportVocab(){
+  const tree = document.getElementById('exportVocabTree');
+  tree.innerHTML = '';
+  function addRow(key, name, depth, info){
+    const row = document.createElement('label');
+    row.className = 'check-opt';
+    row.style.marginLeft = (depth * 16) + 'px';
+    row.innerHTML = `<input type="checkbox" ${exportVocabSel.has(key) ? 'checked' : ''}><span class="cname">${depth>0 ? '⤷ ' : ''}${escapeHTML(name)}</span><span class="cdue">${info}</span>`;
+    row.querySelector('input').addEventListener('change', (e) => {
+      const ids = key === 'none' ? ['none'] : descendantFolderIds(key);
+      ids.forEach(id => { if(e.target.checked) exportVocabSel.add(id); else exportVocabSel.delete(id); });
+      renderExportVocab();
+    });
+    tree.appendChild(row);
+  }
+  function addLevel(parentId, depth){
+    sortByOrder(childFolders(parentId)).forEach(f => {
+      const n = decksInFolder(f.id).length;
+      addRow(f.id, f.name, depth, n + ' liste' + (n>1?'s':''));
+      addLevel(f.id, depth + 1);
+    });
+  }
+  addLevel(null, 0);
+  const orphans = decksInFolder(null).length;
+  if(orphans > 0) addRow('none', 'Sans dossier', 0, orphans + ' liste' + (orphans>1?'s':''));
+  if(!tree.children.length) tree.innerHTML = '<p class="hint">Aucune liste à exporter.</p>';
+  document.getElementById('exportVocabText').value = buildVocabExport(exportVocabSel);
+}
+document.getElementById('openExportVocabBtn').addEventListener('click', () => {
+  exportVocabSel = new Set(exportVocabAllKeys());
+  renderExportVocab();
+  modalExportVocab.classList.remove('hidden');
+});
+document.getElementById('exportVocabAll').addEventListener('click', () => { exportVocabSel = new Set(exportVocabAllKeys()); renderExportVocab(); });
+document.getElementById('exportVocabNone').addEventListener('click', () => { exportVocabSel = new Set(); renderExportVocab(); });
+document.getElementById('closeExportVocab').addEventListener('click', () => modalExportVocab.classList.add('hidden'));
+modalExportVocab.addEventListener('click', (e) => { if(e.target === modalExportVocab) modalExportVocab.classList.add('hidden'); });
+document.getElementById('copyExportVocab').addEventListener('click', async () => {
+  const text = document.getElementById('exportVocabText').value;
+  try{ await navigator.clipboard.writeText(text); showToast('Copié dans le presse-papiers'); }
+  catch(e){ document.getElementById('exportVocabText').select(); showToast('Sélectionnez et copiez manuellement'); }
+});
+document.getElementById('downloadExportVocab').addEventListener('click', () => {
+  const text = document.getElementById('exportVocabText').value;
+  if(!text){ showToast('Rien à exporter'); return; }
+  const blob = new Blob([text], { type:'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'vocabulaire-' + todayStr() + '.txt';
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+});
+
+/* ================= apparence (clair / nuit / automatique) ================= */
+const LS_THEME = 'fiches_theme_v1';
+function applyTheme(){
+  let pref = 'auto';
+  try{ pref = localStorage.getItem(LS_THEME) || 'auto'; }catch(e){}
+  const dark = pref === 'dark' || (pref === 'auto' && window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+  document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+  const m = document.querySelector('meta[name="theme-color"]');
+  if(m) m.setAttribute('content', dark ? '#171310' : '#3E3226');
+}
+(function initTheme(){
+  const sel = document.getElementById('themeSelect');
+  try{ sel.value = localStorage.getItem(LS_THEME) || 'auto'; }catch(e){}
+  sel.addEventListener('change', () => { try{ localStorage.setItem(LS_THEME, sel.value); }catch(e){} applyTheme(); });
+  if(window.matchMedia){
+    const mq = matchMedia('(prefers-color-scheme: dark)');
+    const h = () => applyTheme();
+    if(mq.addEventListener) mq.addEventListener('change', h); else if(mq.addListener) mq.addListener(h);
+  }
+  applyTheme();
+})();
 
 /* ================= navigation : boutons ================= */
 document.getElementById('reviewAllBtn').addEventListener('click', () => {
@@ -2300,6 +2572,7 @@ function openCardModal(cardId, context){
   document.getElementById('cardFrontInput').value = isEdit ? cards[cardId].front : '';
   document.getElementById('cardBackInput').value = isEdit ? cards[cardId].back : '';
   document.getElementById('cardImportantInput').checked = isEdit ? !!cards[cardId].important : false;
+  document.getElementById('cardExcludedInput').checked = isEdit ? !!cards[cardId].excluded : false;
   modalCard.classList.remove('hidden');
   document.getElementById('cardFrontInput').focus();
 }
@@ -2310,18 +2583,22 @@ document.getElementById('saveCard').addEventListener('click', () => {
   const front = document.getElementById('cardFrontInput').value.trim();
   const back = document.getElementById('cardBackInput').value.trim();
   const important = document.getElementById('cardImportantInput').checked;
+  const excluded = document.getElementById('cardExcludedInput').checked;
   if(!front || !back) { showToast('Recto et verso sont requis'); return; }
   if(editingCardId){
     cards[editingCardId].front = front;
     cards[editingCardId].back = back;
     cards[editingCardId].important = important;
+    cards[editingCardId].excluded = excluded;
   } else {
     const id = makeId('card');
-    cards[id] = { id, deckId: currentDeckId, front, back, important, interval:0, repetition:0, ease:2.5, due: todayStr(), createdAt: Date.now() };
+    cards[id] = { id, deckId: currentDeckId, front, back, important, excluded, interval:0, repetition:0, ease:2.5, due: todayStr(), createdAt: Date.now() };
   }
   persistCards();
   modalCard.classList.add('hidden');
-  if(cardModalContext === 'study') renderStudyCard(); else renderDeck();
+  if(cardModalContext === 'study') renderStudyCard();
+  else if(cardModalContext === 'search'){ buildSearchIndex(); renderSearch(); }
+  else renderDeck();
 });
 document.getElementById('deleteCard').addEventListener('click', () => {
   if(!editingCardId) return;
@@ -2333,6 +2610,8 @@ document.getElementById('deleteCard').addEventListener('click', () => {
   if(cardModalContext === 'study'){
     studyQueue = studyQueue.filter(item => item.cardId !== deletedId);
     renderStudyCard();
+  } else if(cardModalContext === 'search'){
+    buildSearchIndex(); renderSearch();
   } else {
     renderDeck();
   }
